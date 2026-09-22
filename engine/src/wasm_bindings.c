@@ -86,6 +86,85 @@ int wasm_structure_viable(int struct_type, int block_x, int block_z)
     return seed_engine_structure_viable(struct_type, block_x, block_z);
 }
 
+/* --- Handle-based API (thread-safe, for parallel finders) --- */
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_create(int mc, int dim, double seed_low, double seed_high)
+{
+    SeedEngineCtx *ctx = seed_engine_create(mc, dim, join_seed(seed_low, seed_high));
+    return (int)(intptr_t)ctx;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void wasm_destroy(int handle)
+{
+    seed_engine_destroy((SeedEngineCtx *)(intptr_t)handle);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_ctx_get_biome(int handle, int scale, int x, int y, int z)
+{
+    return seed_engine_get_biome_ctx((SeedEngineCtx *)(intptr_t)handle, scale,
+                                     x, y, z);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_ctx_generate_biomes(int handle, int x, int z, int width, int height,
+                             int scale, int y, int output_ptr)
+{
+    return seed_engine_generate_biomes_ctx(
+        (SeedEngineCtx *)(intptr_t)handle, x, z, width, height, scale, y,
+        (int *)output_ptr);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_ctx_structure_viable(int handle, int struct_type, int block_x,
+                              int block_z)
+{
+    return seed_engine_structure_viable_ctx((SeedEngineCtx *)(intptr_t)handle,
+                                            struct_type, block_x, block_z);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_ctx_get_spawn(int handle, int out_ptr)
+{
+    int *out = (int *)out_ptr;
+    return seed_engine_get_spawn_ctx((SeedEngineCtx *)(intptr_t)handle, &out[0],
+                                     &out[1]);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_ctx_estimate_spawn(int handle, int out_ptr)
+{
+    int *out = (int *)out_ptr;
+    return seed_engine_estimate_spawn_ctx((SeedEngineCtx *)(intptr_t)handle,
+                                          &out[0], &out[1]);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_structure_name_length(int struct_type)
+{
+    const char *name = seed_engine_structure_name(struct_type);
+    if (!name)
+        return 0;
+    int len = 0;
+    while (name[len] != '\0')
+        len++;
+    return len;
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char *wasm_structure_name_ptr(int struct_type)
+{
+    return seed_engine_structure_name(struct_type);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_biome_colors(int out_ptr)
+{
+    return seed_engine_biome_colors((unsigned char *)out_ptr);
+}
+
 EMSCRIPTEN_KEEPALIVE
 int wasm_slime_chunk(double seed_low, double seed_high, int chunk_x,
                      int chunk_z)

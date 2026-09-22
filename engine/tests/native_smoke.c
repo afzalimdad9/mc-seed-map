@@ -50,6 +50,46 @@ int main(void)
     printf("MC_1_18 enum=%d name=%s\n", mc, name ? name : "(null)");
     assert(name != NULL);
 
+    /* Handle-based API: spawn, estimate, biome colors, structure names. */
+    SeedEngineCtx *ctx = seed_engine_create(MC_1_18, SEED_DIM_OVERWORLD,
+                                            262ULL);
+    assert(ctx != NULL);
+
+    int biome2 = seed_engine_get_biome_ctx(ctx, 1, 0, 63, 0);
+    printf("Handle biome at (0, 63, 0): %d\n", biome2);
+    assert(biome2 == mushroom_fields);
+
+    int wxs = 0, wzs = 0;
+    int have = seed_engine_get_spawn_ctx(ctx, &wxs, &wzs);
+    printf("World spawn: have=%d pos=(%d, %d)\n", have, wxs, wzs);
+    assert(have == 1);
+
+    int ex = 0, ez = 0;
+    have = seed_engine_estimate_spawn_ctx(ctx, &ex, &ez);
+    printf("Estimated spawn: have=%d pos=(%d, %d)\n", have, ex, ez);
+    assert(have == 1);
+
+    const char *vname = seed_engine_structure_name(Village);
+    printf("Structure name Village=%s\n", vname ? vname : "(null)");
+    assert(vname != NULL);
+
+    const char *aname = seed_engine_structure_name(Ancient_City);
+    printf("Structure name Ancient_City=%s\n", aname ? aname : "(null)");
+    assert(aname != NULL);
+
+    unsigned char colors[768];
+    rc = seed_engine_biome_colors(colors);
+    assert(rc == 0);
+    int nonZero = 0;
+    for (int i = 0; i < 768; i++)
+        if (colors[i] != 0)
+            nonZero++;
+    printf("Biome color palette bytes set: %d/768\n", nonZero);
+    assert(nonZero > 0);
+
+    seed_engine_destroy(ctx);
+    ctx = NULL;
+
     printf("Native smoke test passed.\n");
     return 0;
 }

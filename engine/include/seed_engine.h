@@ -67,6 +67,46 @@ int seed_engine_structure_village(void);
 int seed_engine_structure_desert_pyramid(void);
 int seed_engine_structure_ancient_city(void);
 
+/*
+ * Handle-based, thread-safe API. Each handle owns an independent Cubiomes
+ * Generator, so workers/threads can run concurrent searches without sharing
+ * state. The legacy seed_engine_init() functions below remain as a thin
+ * wrapper over a single default handle for backward compatibility.
+ */
+typedef struct SeedEngineCtx SeedEngineCtx;
+
+/* Create an independent generator handle. Returns NULL on failure. */
+SeedEngineCtx *seed_engine_create(int mc, int dim, uint64_t seed);
+
+/* Release a handle (NULL is a no-op). */
+void seed_engine_destroy(SeedEngineCtx *ctx);
+
+/* Handle equivalents of the global query functions. ctx must be non-NULL. */
+int seed_engine_get_biome_ctx(SeedEngineCtx *ctx, int scale, int x, int y,
+                              int z);
+int seed_engine_generate_biomes_ctx(SeedEngineCtx *ctx, int x, int z,
+                                    int width, int height, int scale, int y,
+                                    int *output);
+int seed_engine_structure_viable_ctx(SeedEngineCtx *ctx, int struct_type,
+                                     int block_x, int block_z);
+
+/*
+ * World spawn (accurate, slow) and estimate (fast). Both write block
+ * coordinates to out_x/out_z and return 1 on success, 0 on failure.
+ */
+int seed_engine_get_spawn_ctx(SeedEngineCtx *ctx, int *out_x, int *out_z);
+int seed_engine_estimate_spawn_ctx(SeedEngineCtx *ctx, int *out_x,
+                                   int *out_z);
+
+/* Resource-id name for a structure type (static storage), or NULL. */
+const char *seed_engine_structure_name(int struct_type);
+
+/*
+ * Fill a caller-provided 768-byte buffer (256 biomes x RGB) with the full
+ * Cubiomes biome color palette. Returns 0 on success.
+ */
+int seed_engine_biome_colors(unsigned char *out);
+
 #ifdef __cplusplus
 }
 #endif

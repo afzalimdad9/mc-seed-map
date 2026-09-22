@@ -42,4 +42,23 @@ engine.initialize({ version: v118.enumValue, seed: 1n, dimension: 0 });
 const biomeOther = engine.getBiome(0, 63, 0, 1);
 console.log("Seed 1 biome at origin:", biomeOther, engine.biomeName(biomeOther));
 
+// Handle-based API: spawn, estimate, colors, structure names
+const h = engine.createGenerator({ version: v118.enumValue, seed: 262n, dimension: 0 });
+const hBiome = h.getBiome(0, 63, 0, 1);
+assert.equal(hBiome, 14, "handle biome should match spawn world");
+const spawn = h.getSpawn();
+const est = h.estimateSpawn();
+console.log("Handle spawn:", spawn, "estimate:", est);
+assert.ok(spawn && Number.isInteger(spawn.x) && Number.isInteger(spawn.z));
+assert.ok(est && Number.isInteger(est.x) && Number.isInteger(est.z));
+assert.equal(engine.structureName(engine.structures.village), "village");
+assert.equal(engine.structureName(engine.structures.ancient_city), "ancient_city");
+
+const colors = engine.biomeColors();
+const set = Object.keys(colors).length;
+console.log("Biome colors mapped:", set, "e.g. mushroom_fields(14):", colors[14]);
+assert.ok(set > 0, "expected biome color palette");
+assert.ok(/^#[0-9a-f]{6}$/.test(colors[14] ?? ""), "mushroom_fields should have an RGB hex color");
+h.destroy();
+
 console.log("WASM smoke test passed.");

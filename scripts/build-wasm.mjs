@@ -58,6 +58,16 @@ const exported = [
   "_wasm_structure_village",
   "_wasm_structure_desert_pyramid",
   "_wasm_structure_ancient_city",
+  "_wasm_create",
+  "_wasm_destroy",
+  "_wasm_ctx_get_biome",
+  "_wasm_ctx_generate_biomes",
+  "_wasm_ctx_structure_viable",
+  "_wasm_ctx_get_spawn",
+  "_wasm_ctx_estimate_spawn",
+  "_wasm_structure_name_length",
+  "_wasm_structure_name_ptr",
+  "_wasm_biome_colors",
 ];
 
 const args = [
@@ -72,7 +82,7 @@ const args = [
   "-sENVIRONMENT=web,worker,node",
   "-sALLOW_MEMORY_GROWTH=1",
   `-sEXPORTED_FUNCTIONS=[${exported.join(",")}]`,
-  "-sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,UTF8ToString,getValue,setValue,HEAP32]",
+  "-sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,UTF8ToString,getValue,setValue,HEAP32,HEAPU8]",
   "-o",
   "wasm/dist/seed_engine.js",
 ];
