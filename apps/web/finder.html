@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minecraft Seed Finder</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    #results { max-height: 480px; overflow: auto; }
+    #results li { font-family: ui-monospace, monospace; }
+    #progress { font-size: 0.85rem; color: #9c9; white-space: pre; }
+    .fieldset { border: 1px solid #333; border-radius: 6px; padding: 10px; margin: 10px 0; }
+    .fieldset legend { color: #9cf; padding: 0 6px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .row label { gap: 4px; }
+    input[type="checkbox"] { accent-color: #2d6a2d; }
+    .err { color: #f77; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Seed Finder</h1>
+    <a href="./index.html" style="color:#9cf; font-size:0.9rem;">← Seed Map</a>
+    <label>Version
+      <select id="version">
+        <option value="1.18">1.18</option>
+        <option value="1.21">1.21</option>
+        <option value="newest">newest</option>
+      </select>
+    </label>
+    <button id="start">Find seeds</button>
+    <button id="stop" disabled>Stop</button>
+    <span id="status">Loading engine…</span>
+  </header>
+
+  <main style="flex-direction: column; max-width: 920px;">
+
+    <fieldset class="fieldset">
+      <legend>Biome at target (any match)</legend>
+      <div class="row">
+        <input id="biomes" type="text" placeholder="mushroom_fields, deep_dark" size="40" />
+        <select id="biomeGrid">
+          <option value="1">1×1</option>
+          <option value="3" selected>3×3</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <fieldset class="fieldset">
+      <legend>Structures (ANY selected within radius)</legend>
+      <div class="row">
+        <label>Radius <input id="radius" type="number" value="1024" size="6" /></label>
+        <label><input id="viable" type="checkbox" /> require biome viability</label>
+        <label><input id="nearSpawn" type="checkbox" /> evaluate near spawn</label>
+        <label>Max dist filter <input id="distance" type="number" value="" placeholder="none" size="6" /></label>
+      </div>
+      <div class="row" id="structList" style="margin-top:8px;"></div>
+    </fieldset>
+
+    <fieldset class="fieldset">
+      <legend>Search</legend>
+      <div class="row">
+        <label><input id="slime" type="checkbox" /> slime chunk within
+          <input id="slimeRadius" type="number" value="4" size="3" /> chunks</label>
+        <label>count <input id="count" type="number" value="10" size="5" /></label>
+        <label>max seeds <input id="maxSeeds" type="number" value="100000" size="8" /></label>
+        <label>workers <input id="workers" type="number" value="4" size="3" /></label>
+      </div>
+    </fieldset>
+
+    <pre id="progress">—</pre>
+
+    <aside style="width: 100%;">
+      <h2>Results</h2>
+      <ul id="results"><li>Run a search to see matching seeds.</li></ul>
+    </aside>
+  </main>
+
+  <script type="module" src="./src/finder.js"></script>
+</body>
+</html>

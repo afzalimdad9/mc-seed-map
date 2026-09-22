@@ -13,16 +13,22 @@
 - [x] Browser seed map (canvas, legend, hover, structure search) — headless Chrome verified
 - [x] CLI: `biome`, `map`, `find`, `versions`
 
-## M2 — Seed Finder product + deeper engine (NEXT)
+## M2 — Seed Finder product + deeper engine (DONE)
 
-- [ ] Composable filter engine (biome radius, structure distance, spawn)
-- [ ] Web Worker pool for browser search
-- [ ] Worker/parallel CLI search with progress + cancel
-- [x] Structure position search (sequential scan baseline exists)
-- [ ] Viability filtering (`isViableStructurePos`) in finder
-- [ ] Spawn position support
-- [ ] Handle-based generator API (multi-thread safe)
-- [ ] Biome colors: full Cubiomes table instead of curated map
+- [x] Handle-based generator API (thread-safe, reusable `setSeed` per scan)
+- [x] Spawn position support (`getSpawn` / `estimateSpawn`)
+- [x] Viability filtering (`isViableStructurePos`) in finder
+- [x] Composable filter engine (biome radius, structure distance, slime, spawn)
+  - `packages/finder/filters.js` — `and`/`or`/`not`, descriptors shared by
+    CLI, Node workers and browser Web Workers
+- [x] Search engine with progress + cancel (`packages/finder/search.js`)
+  - validated: 1.18 seed 262 ↔ `mushroom_fields` at origin
+- [x] Web Worker pool for browser search (`finder.html` + `src/finder.js`)
+  - headless-Chrome verified (`scripts/test-browser.mjs`)
+- [x] Worker/parallel CLI search with progress + cancel (`find --workers`)
+- [x] Full structure enum + region sizes + biome-id lookup via WASM
+- [x] Biome colors: full Cubiomes palette (`initBiomeColors`)
+- [x] StructureName via WASM (`struct2str`)
 
 ## M3 — Historical versions + validation matrix
 
