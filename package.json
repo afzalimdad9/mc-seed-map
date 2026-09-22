@@ -10,8 +10,9 @@
     "build:wasm": "node scripts/build-wasm.mjs",
     "test:wasm": "node scripts/test-wasm.mjs",
     "test:finder": "node scripts/test-finder.mjs",
+    "test:versions": "node scripts/test-versions.mjs",
     "test:browser": "node scripts/test-browser.mjs",
-    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:versions",
     "cli": "node apps/cli/src/index.js",
     "dev": "python3 -m http.server 8080"
   },
