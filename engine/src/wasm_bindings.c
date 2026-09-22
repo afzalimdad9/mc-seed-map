@@ -208,6 +208,18 @@ EMSCRIPTEN_KEEPALIVE
 int wasm_version_newest(void) { return seed_engine_version_newest(); }
 
 EMSCRIPTEN_KEEPALIVE
+int wasm_version_min(void) { return seed_engine_version_min(); }
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_version_max(void) { return seed_engine_version_max(); }
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_version_from_string(int label_ptr)
+{
+    return seed_engine_version_from_string((const char *)label_ptr);
+}
+
+EMSCRIPTEN_KEEPALIVE
 int wasm_structure_village(void) { return seed_engine_structure_village(); }
 
 EMSCRIPTEN_KEEPALIVE

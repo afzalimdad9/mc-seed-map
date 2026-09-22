@@ -41,19 +41,6 @@ function parseSeed(text) {
   return BigInt.asIntN(64, h);
 }
 
-function versionEntry(registry, label) {
-  const id = label ?? "1.18";
-  const found =
-    registry.versions.find((v) => v.label === id) ||
-    registry.versions.find((v) => v.id === `java-${id}`);
-  if (!found) {
-    console.error(`Unsupported version: ${id}`);
-    console.error("Supported:", registry.versions.map((v) => v.label).join(", "));
-    process.exit(2);
-  }
-  return found;
-}
-
 function writePPM(path, width, height, rgb) {
   const header = Buffer.from(`P6\n${width} ${height}\n255\n`, "ascii");
   writeFileSync(path, Buffer.concat([header, Buffer.from(rgb)]));
@@ -77,14 +64,26 @@ Commands:
 }
 
 const engine = await new JavaWorldGenerator().init();
-const registry = createVersionRegistry(engine.module);
+const registry = createVersionRegistry(engine);
 
 if (cmd === "versions") {
   console.log(JSON.stringify(registry, null, 2));
   process.exit(0);
 }
 
-const version = versionEntry(registry, args.version);
+function versionEntry(label) {
+  if (label === "newest") return registry.versions[registry.versions.length - 1];
+  const found = registry.find(label);
+  if (found) return found;
+  // Fall back to Cubiomes' own parser (accepts "1.19.4", "1.20.6", ...).
+  const parsed = engine.versionFromString(label);
+  if (parsed > 0) return registry.find(parsed);
+  console.error(`Unsupported version: ${label}`);
+  console.error("Supported:", registry.versions.map((v) => v.label).join(", "));
+  process.exit(2);
+}
+
+const version = versionEntry(args.version);
 const seed = parseSeed(args.seed ?? "0");
 const dimension = args.dimension === "nether" ? -1 : args.dimension === "end" ? 1 : 0;
 

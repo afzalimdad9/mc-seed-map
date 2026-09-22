@@ -5,8 +5,8 @@ import { createVersionRegistry } from "../packages/java/versions.js";
 console.log("Loading WASM engine...");
 const engine = await new JavaWorldGenerator().init();
 
-const registry = createVersionRegistry(engine.module);
-const v118 = registry.versions.find((v) => v.id === "java-1.18");
+const registry = createVersionRegistry(engine);
+const v118 = registry.find("1.18");
 console.log("MC_1_18 enum:", v118.enumValue);
 assert.equal(typeof v118.enumValue, "number");
 

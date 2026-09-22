@@ -9,8 +9,17 @@ const stopBtn = document.getElementById("stop");
 
 // ---- engine bootstrap ----
 const engine = await new JavaWorldGenerator().init();
-const registry = createVersionRegistry(engine.module);
+const registry = createVersionRegistry(engine);
 statusEl.textContent = "Engine ready";
+
+const versionSel = document.getElementById("version");
+for (const v of registry.versions) {
+  const opt = document.createElement("option");
+  opt.value = v.label;
+  opt.textContent = v.label;
+  if (v.label === "1.18") opt.selected = true;
+  versionSel.appendChild(opt);
+}
 
 // Enumerate structures (all Cubiomes types) as labelled checkboxes.
 const structOl = document.getElementById("structList");
@@ -51,10 +60,9 @@ function buildFilters() {
 }
 
 function selectedVersion() {
-  const id = document.getElementById("version").value;
-  const entry = registry.versions.find((v) => v.id === `java-${id}`) ||
-    registry.versions.find((v) => v.label === id);
-  if (!entry) throw new Error(`Version not supported: ${id}`);
+  const label = document.getElementById("version").value;
+  const entry = label === "newest" ? registry.versions[registry.versions.length - 1] : registry.find(label);
+  if (!entry) throw new Error(`Version not supported: ${label}`);
   return entry;
 }
 

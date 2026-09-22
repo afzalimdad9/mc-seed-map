@@ -18,8 +18,34 @@ export class JavaWorldGenerator {
       "1.21": this.module._wasm_version_1_21(),
       newest: this.module._wasm_version_newest(),
     };
+    this.versionRange = {
+      min: this.module._wasm_version_min(),
+      max: this.module._wasm_version_max(),
+    };
     this.structures = this.#enumerateStructures();
     return this;
+  }
+
+  /** Resolve a version label like "1.16" / "1.19.2" to the Cubiomes enum. */
+  versionFromString(label) {
+    this.#assertModule();
+    const inPtr = this.module._malloc(64);
+    if (!inPtr) throw new Error("WASM malloc failed");
+    try {
+      const bytes = this.module.lengthBytesUTF8(label) + 1;
+      this.module.stringToUTF8(label, inPtr, bytes);
+      return this.module._wasm_version_from_string(inPtr);
+    } finally {
+      this.module._free(inPtr);
+    }
+  }
+
+  versionName(mc) {
+    this.#assertModule();
+    const len = this.module._wasm_mc_name_length(mc);
+    if (len <= 0) return null;
+    const ptr = this.module._wasm_mc_name_ptr(mc);
+    return this.module.UTF8ToString(ptr, len);
   }
 
   /** Enumerate every Cubiomes StructureType by name (0..count-1 contiguous). */

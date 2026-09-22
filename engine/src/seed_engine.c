@@ -166,6 +166,17 @@ int seed_engine_slime_chunk(uint64_t seed, int chunk_x, int chunk_z)
 int seed_engine_version_1_18(void) { return MC_1_18; }
 int seed_engine_version_1_21(void) { return MC_1_21; }
 int seed_engine_version_newest(void) { return MC_NEWEST; }
+int seed_engine_version_min(void) { return MC_B1_7; }
+int seed_engine_version_max(void) { return MC_NEWEST; }
+
+int seed_engine_version_from_string(const char *label)
+{
+    if (!label)
+        return -1;
+    int mc = str2mc(label);
+    return mc == MC_UNDEF ? -1 : mc;
+}
+
 int seed_engine_structure_village(void) { return Village; }
 int seed_engine_structure_desert_pyramid(void) { return Desert_Pyramid; }
 int seed_engine_structure_ancient_city(void) { return Ancient_City; }

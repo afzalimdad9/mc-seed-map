@@ -68,6 +68,18 @@ int seed_engine_structure_desert_pyramid(void);
 int seed_engine_structure_ancient_city(void);
 
 /*
+ * Full MCVersion enum range Cubiomes models. The enum is contiguous from
+ * min..max (see biomes.h enum MCVersion). Every value maps to a real
+ * generation algorithm the engine supports; no snapshot versions are claimed
+ * because Cubiomes has none.
+ */
+int seed_engine_version_min(void);
+int seed_engine_version_max(void);
+
+/* Parse a version label like "1.16", "1.19.2" via Cubiomes str2mc, or -1. */
+int seed_engine_version_from_string(const char *label);
+
+/*
  * Handle-based, thread-safe API. Each handle owns an independent Cubiomes
  * Generator, so workers/threads can run concurrent searches without sharing
  * state. The legacy seed_engine_init() functions below remain as a thin

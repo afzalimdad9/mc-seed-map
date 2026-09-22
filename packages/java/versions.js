@@ -2,8 +2,9 @@
  * Minecraft version registry.
  *
  * Values are discovered at runtime from the WASM engine (Cubiomes enum
- * MCVersion) — never hardcoded — so JS and C can never drift apart.
- *
+ * MCVersion) — never hardcoded — so JS (web + CLI) and C can never drift
+ * apart. Every version listed is a real generation algorithm the engine
+ * models; no snapshot versions are claimed because Cubiomes has none.
  * Support flags are explicit: we never claim a capability the engine lacks.
  */
 export const EDITIONS = Object.freeze({
@@ -17,29 +18,39 @@ export const DIMENSIONS = Object.freeze({
   end: 1,
 });
 
-export function createVersionRegistry(wasm) {
+/** Labels Cubiomes' mc2str leaves unreferenced (not really modelled). */
+function isUnreferenced(label) {
+  return label === "?" || label === null || label.trim() === "";
+}
+
+export function createVersionRegistry(engine) {
+  const min = engine.versionRange.min;
+  const max = engine.versionRange.max;
+  const versions = [];
+  const seen = new Set();
+
+  for (let mc = min; mc <= max; mc++) {
+    const label = engine.versionName(mc);
+    if (isUnreferenced(label)) continue;
+    versions.push({
+      id: `java-${mc}`,
+      label,
+      enumValue: mc,
+      capabilities: { biomes: true, structures: true, spawn: true },
+    });
+    seen.add(label);
+  }
+
   return Object.freeze({
     edition: EDITIONS.java,
-    versions: [
-      {
-        id: "java-1.18",
-        label: "1.18",
-        enumValue: wasm._wasm_version_1_18(),
-        capabilities: { biomes: true, structures: true, spawn: false },
-      },
-      {
-        id: "java-1.21",
-        label: "1.21",
-        enumValue: wasm._wasm_version_1_21(),
-        capabilities: { biomes: true, structures: true, spawn: false },
-      },
-      {
-        id: "java-newest",
-        label: "newest (Cubiomes MC_NEWEST)",
-        enumValue: wasm._wasm_version_newest(),
-        capabilities: { biomes: true, structures: true, spawn: false },
-      },
-    ],
+    versions: Object.freeze(versions),
+    find(label) {
+      return (
+        this.versions.find((v) => v.label === label) ||
+        this.versions.find((v) => v.id === `java-${label}`) ||
+        this.versions.find((v) => v.enumValue === Number(label))
+      );
+    },
     bedrock: {
       id: "bedrock",
       supported: false,
