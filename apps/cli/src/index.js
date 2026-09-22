@@ -11,6 +11,7 @@ import { writeFileSync } from "node:fs";
 import { JavaWorldGenerator } from "../../../packages/java/engine.js";
 import { createVersionRegistry } from "../../../packages/java/versions.js";
 import { biomeColor, unknownColor } from "../../web/src/biome-colors.js";
+import { runFind } from "./find.js";
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -20,7 +21,13 @@ function parseArgs(argv) {
       const key = a.slice(2);
       const next = argv[i + 1];
       if (next === undefined || next.startsWith("--")) args[key] = true;
-      else { args[key] = next; i++; }
+      else {
+        if (key in args) {
+          if (!Array.isArray(args[key])) args[key] = [args[key]];
+          args[key].push(next);
+        } else args[key] = next;
+        i++;
+      }
     } else args._.push(a);
   }
   return args;
@@ -61,7 +68,10 @@ if (!cmd || args.help) {
 Commands:
   biome  --seed <s> --version <v> --x --y --z [--scale 1]
   map    --seed <s> --version <v> [--size 64] [--scale 4] [--out map.ppm]
-  find   --version <v> [--count 5] [--structure village] [--reg-radius 8]
+  find   --version <v> [--count 5] [--max-seeds 100000] [--workers 4]
+         [--biome <name>...] [--biome-grid 3]
+         [--structure <name>...] [--radius 1024] [--structure-viable]
+         [--slime] [--slime-radius 4] [--distance <blocks>] [--near-spawn]
   versions`);
   process.exit(cmd ? 0 : 1);
 }
@@ -117,38 +127,7 @@ if (cmd === "biome") {
   writePPM(out, size, size, rgb);
   console.log(JSON.stringify({ out, size, scale, seed: seed.toString(), version: version.label }));
 } else if (cmd === "find") {
-  engine.initialize({ version: version.enumValue, seed, dimension });
-  const count = Number(args.count ?? 5);
-  const structure = typeof args.structure === "string" ? args.structure : "village";
-  const type = engine.structures[structure];
-  if (type === undefined) {
-    console.error(`Unknown structure: ${structure}. Known:`, Object.keys(engine.structures).join(", "));
-    process.exit(2);
-  }
-  const rr = Number(args["reg-radius"] ?? 8);
-  const results = [];
-  // Sequential seed scan: cheap structure-position prefilter near origin
-  const maxSeeds = Number(args["max-seeds"] ?? 100000);
-  for (let s = 0n; s < BigInt(maxSeeds) && results.length < count; s++) {
-    let best = null;
-    for (let rx = -rr; rx <= rr; rx++) {
-      for (let rz = -rr; rz <= rr; rz++) {
-        // structurePos needs initialized engine per seed for viability;
-        // here we only use position generation (seed-dependent, no generator state)
-        const pos = engine.structurePos(type, s, rx, rz);
-        if (pos) {
-          const dist = Math.hypot(pos.x, pos.z);
-          if (!best || dist < best.dist) best = { ...pos, dist, rx, rz };
-        }
-      }
-    }
-    if (best) results.push({ seed: s.toString(), ...best });
-    if ((Number(s) + 1) % 10000 === 0) {
-      process.stderr.write(`scanned ${Number(s) + 1} seeds, found ${results.length}\n`);
-    }
-  }
-  results.sort((a, b) => a.dist - b.dist);
-  console.log(JSON.stringify({ structure, count: results.length, results }, null, 2));
+  await runFind({ args, registry, version });
 } else {
   console.error(`Unknown command: ${cmd}`);
   process.exit(1);

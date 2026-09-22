@@ -17,9 +17,14 @@ import { JavaWorldGenerator } from "../java/engine.js";
 import { buildFilters } from "./filters.js";
 import { createFinderView, runSeedSearch } from "./search.js";
 
-const api = typeof parentPort !== "undefined"
-  ? parentPort
+// In Node workers parentPort comes from node:worker_threads; in browsers the
+// worker global is self. Detect Node (process exists) and pull the port.
+const isNode = typeof process !== "undefined" && !!process.versions?.node;
+const api = isNode
+  ? (await import("node:worker_threads")).parentPort
   : globalThis.self;
+
+if (!api) throw new Error("Unsupported worker environment");
 
 const searchState = new Map(); // id -> { signal }
 
@@ -58,8 +63,7 @@ async function handleSearch(id, payload) {
   }
 }
 
-api.onmessage = async (event) => {
-  const msg = event.data ?? event;
+async function onMessage(msg) {
   if (!msg || typeof msg !== "object" || !msg.cmd) return;
   if (msg.cmd === "search") {
     await handleSearch(msg.id, msg.payload);
@@ -67,4 +71,10 @@ api.onmessage = async (event) => {
     const st = searchState.get(msg.id);
     if (st) st.aborted = true;
   }
-};
+}
+
+if (isNode) {
+  api.on("message", onMessage);
+} else {
+  api.onmessage = async (event) => onMessage(event.data ?? event);
+}
