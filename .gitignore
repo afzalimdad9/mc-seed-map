@@ -1,0 +1,8 @@
+node_modules/
+build/
+wasm/dist/
+*.o
+*.a
+*.so
+*.wasm.map
+.DS_Store

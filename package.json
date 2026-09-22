@@ -1,0 +1,16 @@
+{
+  "name": "minecraft-seed-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chunkbase-style Minecraft Seed Map and Seed Finder (Java + Bedrock) with a shared WASM/native generation engine",
+  "scripts": {
+    "build:native": "cmake -S . -B build/native && cmake --build build/native",
+    "test:native": "./build/native/native_smoke",
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "test:wasm": "node scripts/test-wasm.mjs",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm",
+    "cli": "node apps/cli/src/index.js",
+    "dev": "python3 -m http.server 8080 -d apps/web"
+  }
+}
