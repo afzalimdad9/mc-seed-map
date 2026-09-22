@@ -1,5 +1,4 @@
-import { JavaWorldGenerator } from "../../../packages/java/engine.js";
-import { createVersionRegistry } from "../../../packages/java/versions.js";
+import { createWorldGenerator } from "../../../packages/core/create-world-generator.js";
 
 const statusEl = document.getElementById("status");
 const progressEl = document.getElementById("progress");
@@ -8,8 +7,9 @@ const startBtn = document.getElementById("start");
 const stopBtn = document.getElementById("stop");
 
 // ---- engine bootstrap ----
-const engine = await new JavaWorldGenerator().init();
-const registry = createVersionRegistry(engine);
+const workspace = await createWorldGenerator();
+const engine = workspace;
+const registry = workspace.versions;
 statusEl.textContent = "Engine ready";
 
 const versionSel = document.getElementById("version");

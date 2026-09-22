@@ -8,9 +8,8 @@
  *   node apps/cli/src/index.js find  --version 1.18 --count 5 --structure village --radius 0
  */
 import { writeFileSync } from "node:fs";
-import { JavaWorldGenerator } from "../../../packages/java/engine.js";
-import { createVersionRegistry } from "../../../packages/java/versions.js";
-import { paletteFromEngine, unknownColor } from "../../../packages/core/biome-colors.js";
+import { createWorldGenerator } from "../../../packages/core/create-world-generator.js";
+import { unknownColor } from "../../../packages/core/biome-colors.js";
 import { runFind } from "./find.js";
 
 function parseArgs(argv) {
@@ -63,8 +62,8 @@ Commands:
   process.exit(cmd ? 0 : 1);
 }
 
-const engine = await new JavaWorldGenerator().init();
-const registry = createVersionRegistry(engine);
+const engine = await createWorldGenerator();
+const registry = engine.versions;
 
 if (cmd === "versions") {
   console.log(JSON.stringify(registry, null, 2));
@@ -107,7 +106,7 @@ if (cmd === "biome") {
   engine.initialize({ version: version.enumValue, seed, dimension });
   const size = Number(args.size ?? 64);
   const scale = Number(args.scale ?? (dimension === 0 ? 4 : 1)); // nether/end are 1:1
-  const palette = paletteFromEngine(engine);
+  const palette = engine.palette;
   const cells = engine.generateBiomes({
     x: Number(args.x ?? -size / 2),
     z: Number(args.z ?? -size / 2),

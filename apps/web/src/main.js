@@ -1,6 +1,5 @@
-import { JavaWorldGenerator } from "../../../packages/java/engine.js";
-import { createVersionRegistry } from "../../../packages/java/versions.js";
-import { paletteFromEngine, unknownColor } from "../../../packages/core/biome-colors.js";
+import { createWorldGenerator } from "../../../packages/core/create-world-generator.js";
+import { unknownColor } from "../../../packages/core/biome-colors.js";
 
 const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
@@ -10,9 +9,10 @@ const legendEl = document.getElementById("legend");
 const structuresEl = document.getElementById("structures");
 const hoverEl = document.getElementById("hover");
 
-const engine = await new JavaWorldGenerator().init();
-const registry = createVersionRegistry(engine);
-const palette = paletteFromEngine(engine);
+const { engine, registry, palette } = await (async () => {
+  const e = await createWorldGenerator();
+  return { engine: e, registry: e.versions, palette: e.palette };
+})();
 statusEl.textContent = "Engine ready";
 
 const versionSelect = document.getElementById("version");

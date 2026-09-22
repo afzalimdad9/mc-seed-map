@@ -13,8 +13,9 @@
     "test:versions": "node scripts/test-versions.mjs",
     "gen:golden": "cmake -S . -B build/native >/dev/null && cmake --build build/native --target golden_dump >/dev/null && ./build/native/golden_dump tests/golden/worlds.bin",
     "test:golden": "node scripts/test-golden.mjs",
+    "test:interface": "node scripts/test-interface.mjs",
     "test:browser": "node scripts/test-browser.mjs",
-    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:versions && npm run test:golden",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:versions && npm run test:golden && npm run test:interface",
     "cli": "node apps/cli/src/index.js",
     "dev": "python3 -m http.server 8080"
   },
