@@ -8,6 +8,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct SeedEngineCtx {
     Generator gen;
@@ -166,6 +167,23 @@ int seed_engine_structure_ancient_city(void) { return Ancient_City; }
 const char *seed_engine_structure_name(int struct_type)
 {
     return struct2str(struct_type);
+}
+
+int seed_engine_structure_type_count(void)
+{
+    return FEATURE_NUM;
+}
+
+int seed_engine_biome_id(int mc, const char *name)
+{
+    if (!name)
+        return -1;
+    for (int id = 0; id < 256; id++) {
+        const char *n = biome2str(mc, id);
+        if (n && strcmp(n, name) == 0)
+            return id;
+    }
+    return -1;
 }
 
 int seed_engine_biome_colors(unsigned char *out)

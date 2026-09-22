@@ -53,6 +53,16 @@ assert.ok(spawn && Number.isInteger(spawn.x) && Number.isInteger(spawn.z));
 assert.ok(est && Number.isInteger(est.x) && Number.isInteger(est.z));
 assert.equal(engine.structureName(engine.structures.village), "village");
 assert.equal(engine.structureName(engine.structures.ancient_city), "ancient_city");
+const enumCount = Object.keys(engine.structures).length;
+console.log("Structures enumerated:", enumCount);
+assert.ok(enumCount >= 20, "expected full Cubiomes structure enum");
+assert.equal(engine.resolveStructure("village"), engine.structures.village);
+
+engine.initialize({ version: v118.enumValue, seed: 262n, dimension: 0 });
+const mid = engine.biomeId("mushroom_fields");
+console.log("biomeId(mushroom_fields):", mid);
+assert.equal(mid, 14);
+assert.equal(engine.biomeId("not_a_biome"), -1);
 
 const colors = engine.biomeColors();
 const set = Object.keys(colors).length;

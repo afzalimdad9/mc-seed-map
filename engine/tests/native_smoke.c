@@ -87,6 +87,18 @@ int main(void)
     printf("Biome color palette bytes set: %d/768\n", nonZero);
     assert(nonZero > 0);
 
+    int nstruct = seed_engine_structure_type_count();
+    printf("Structure type count: %d\n", nstruct);
+    assert(nstruct > 5);
+
+    int mid = seed_engine_biome_id(MC_1_18, "mushroom_fields");
+    printf("biome_id(mushroom_fields)=%d\n", mid);
+    assert(mid == mushroom_fields);
+
+    int missing = seed_engine_biome_id(MC_1_18, "not_a_biome");
+    printf("biome_id(bogus)=%d\n", missing);
+    assert(missing == -1);
+
     seed_engine_destroy(ctx);
     ctx = NULL;
 

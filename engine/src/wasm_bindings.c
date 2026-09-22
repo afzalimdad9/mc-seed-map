@@ -160,6 +160,18 @@ const char *wasm_structure_name_ptr(int struct_type)
 }
 
 EMSCRIPTEN_KEEPALIVE
+int wasm_structure_type_count(void)
+{
+    return seed_engine_structure_type_count();
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_biome_id(int mc, int name_ptr)
+{
+    return seed_engine_biome_id(mc, (const char *)name_ptr);
+}
+
+EMSCRIPTEN_KEEPALIVE
 int wasm_biome_colors(int out_ptr)
 {
     return seed_engine_biome_colors((unsigned char *)out_ptr);

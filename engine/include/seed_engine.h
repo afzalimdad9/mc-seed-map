@@ -101,6 +101,12 @@ int seed_engine_estimate_spawn_ctx(SeedEngineCtx *ctx, int *out_x,
 /* Resource-id name for a structure type (static storage), or NULL. */
 const char *seed_engine_structure_name(int struct_type);
 
+/* Number of entries in Cubiomes enum StructureType (contiguous 0..n-1). */
+int seed_engine_structure_type_count(void);
+
+/* First biome id whose name equals `name` at version mc, or -1. */
+int seed_engine_biome_id(int mc, const char *name);
+
 /*
  * Fill a caller-provided 768-byte buffer (256 biomes x RGB) with the full
  * Cubiomes biome color palette. Returns 0 on success.

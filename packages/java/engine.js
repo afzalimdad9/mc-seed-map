@@ -18,12 +18,42 @@ export class JavaWorldGenerator {
       "1.21": this.module._wasm_version_1_21(),
       newest: this.module._wasm_version_newest(),
     };
-    this.structures = {
-      village: this.module._wasm_structure_village(),
-      desert_pyramid: this.module._wasm_structure_desert_pyramid(),
-      ancient_city: this.module._wasm_structure_ancient_city(),
-    };
+    this.structures = this.#enumerateStructures();
     return this;
+  }
+
+  /** Enumerate every Cubiomes StructureType by name (0..count-1 contiguous). */
+  #enumerateStructures() {
+    const out = {};
+    const count = this.module._wasm_structure_type_count();
+    for (let i = 0; i < count; i++) {
+      const len = this.module._wasm_structure_name_length(i);
+      if (len <= 0) continue;
+      const ptr = this.module._wasm_structure_name_ptr(i);
+      const name = this.module.UTF8ToString(ptr, len);
+      if (name && !(name in out)) out[name] = i;
+    }
+    return out;
+  }
+
+  /** Resolve a structure name or partial name to its enum type, or undefined. */
+  resolveStructure(input) {
+    if (typeof input === "number") return input;
+    return this.structures[input];
+  }
+
+  /** Case-insensitive biome id lookup by resource-id name at current version. */
+  biomeId(name) {
+    this.#assertModule();
+    const inPtr = this.module._malloc(64);
+    if (!inPtr) throw new Error("WASM malloc failed");
+    try {
+      const bytes = this.module.lengthBytesUTF8(name) + 1;
+      this.module.stringToUTF8(name, inPtr, bytes);
+      return this.module._wasm_biome_id(this.mcCurrent ?? this.mc["1.18"], inPtr);
+    } finally {
+      this.module._free(inPtr);
+    }
   }
 
   static splitSeed(seed) {
@@ -104,6 +134,10 @@ export class JavaWorldGenerator {
     if (!this.module) throw new Error("WASM module not loaded");
     const [low, high] = JavaWorldGenerator.splitSeed(seed);
     return this.module._wasm_slime_chunk(low, high, chunkX, chunkZ) === 1;
+  }
+
+  #assertModule() {
+    if (!this.module) throw new Error("WASM module not loaded");
   }
 
   #assertInit() {

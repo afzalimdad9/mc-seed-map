@@ -67,6 +67,8 @@ const exported = [
   "_wasm_ctx_estimate_spawn",
   "_wasm_structure_name_length",
   "_wasm_structure_name_ptr",
+  "_wasm_structure_type_count",
+  "_wasm_biome_id",
   "_wasm_biome_colors",
 ];
 
@@ -82,7 +84,7 @@ const args = [
   "-sENVIRONMENT=web,worker,node",
   "-sALLOW_MEMORY_GROWTH=1",
   `-sEXPORTED_FUNCTIONS=[${exported.join(",")}]`,
-  "-sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,UTF8ToString,getValue,setValue,HEAP32,HEAPU8]",
+  "-sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,UTF8ToString,getValue,setValue,HEAP32,HEAPU8,lengthBytesUTF8,stringToUTF8]",
   "-o",
   "wasm/dist/seed_engine.js",
 ];
