@@ -42,15 +42,15 @@ export class JavaWorldGenerator {
     return this.structures[input];
   }
 
-  /** Case-insensitive biome id lookup by resource-id name at current version. */
-  biomeId(name) {
+  /** Case-insensitive biome id lookup by resource-id name at version mc. */
+  biomeId(name, mc) {
     this.#assertModule();
     const inPtr = this.module._malloc(64);
     if (!inPtr) throw new Error("WASM malloc failed");
     try {
       const bytes = this.module.lengthBytesUTF8(name) + 1;
       this.module.stringToUTF8(name, inPtr, bytes);
-      return this.module._wasm_biome_id(this.mcCurrent ?? this.mc["1.18"], inPtr);
+      return this.module._wasm_biome_id(mc ?? this.mcCurrent ?? this.mc["1.18"], inPtr);
     } finally {
       this.module._free(inPtr);
     }
@@ -158,6 +158,10 @@ export class JavaWorldGenerator {
     if (!handle) throw new Error("Engine handle allocation failed");
     return {
       handle,
+      setSeed: (seed) => {
+        const [l, h] = JavaWorldGenerator.splitSeed(seed);
+        this.module._wasm_set_seed(handle, l, h);
+      },
       getBiome: (x, y, z, scale = 1) =>
         this.module._wasm_ctx_get_biome(handle, scale, x, y, z),
       generateBiomes: ({ x, z, width, height, scale = 4, y = 15 }) =>

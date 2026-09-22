@@ -90,6 +90,9 @@ int seed_engine_generate_biomes_ctx(SeedEngineCtx *ctx, int x, int z,
 int seed_engine_structure_viable_ctx(SeedEngineCtx *ctx, int struct_type,
                                      int block_x, int block_z);
 
+/* Re-seed an existing handle in place (cheap; avoid create/destroy churn). */
+void seed_engine_set_seed_ctx(SeedEngineCtx *ctx, uint64_t seed);
+
 /*
  * World spawn (accurate, slow) and estimate (fast). Both write block
  * coordinates to out_x/out_z and return 1 on success, 0 on failure.
@@ -103,6 +106,12 @@ const char *seed_engine_structure_name(int struct_type);
 
 /* Number of entries in Cubiomes enum StructureType (contiguous 0..n-1). */
 int seed_engine_structure_type_count(void);
+
+/*
+ * Region size in chunks for a structure at version mc (Cubiomes
+ * StructureConfig.regionSize), or 0 if the structure is not configured.
+ */
+int seed_engine_structure_region_size(int struct_type, int mc);
 
 /* First biome id whose name equals `name` at version mc, or -1. */
 int seed_engine_biome_id(int mc, const char *name);

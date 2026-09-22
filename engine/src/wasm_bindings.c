@@ -102,6 +102,13 @@ void wasm_destroy(int handle)
 }
 
 EMSCRIPTEN_KEEPALIVE
+void wasm_set_seed(int handle, double seed_low, double seed_high)
+{
+    seed_engine_set_seed_ctx((SeedEngineCtx *)(intptr_t)handle,
+                             join_seed(seed_low, seed_high));
+}
+
+EMSCRIPTEN_KEEPALIVE
 int wasm_ctx_get_biome(int handle, int scale, int x, int y, int z)
 {
     return seed_engine_get_biome_ctx((SeedEngineCtx *)(intptr_t)handle, scale,
@@ -163,6 +170,12 @@ EMSCRIPTEN_KEEPALIVE
 int wasm_structure_type_count(void)
 {
     return seed_engine_structure_type_count();
+}
+
+EMSCRIPTEN_KEEPALIVE
+int wasm_structure_region_size(int struct_type, int mc)
+{
+    return seed_engine_structure_region_size(struct_type, mc);
 }
 
 EMSCRIPTEN_KEEPALIVE

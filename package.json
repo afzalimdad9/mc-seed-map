@@ -9,7 +9,8 @@
     "test:native": "./build/native/native_smoke",
     "build:wasm": "node scripts/build-wasm.mjs",
     "test:wasm": "node scripts/test-wasm.mjs",
-    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm",
+    "test:finder": "node scripts/test-finder.mjs",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder",
     "cli": "node apps/cli/src/index.js",
     "dev": "python3 -m http.server 8080"
   }

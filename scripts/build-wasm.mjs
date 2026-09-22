@@ -60,6 +60,7 @@ const exported = [
   "_wasm_structure_ancient_city",
   "_wasm_create",
   "_wasm_destroy",
+  "_wasm_set_seed",
   "_wasm_ctx_get_biome",
   "_wasm_ctx_generate_biomes",
   "_wasm_ctx_structure_viable",
@@ -68,6 +69,7 @@ const exported = [
   "_wasm_structure_name_length",
   "_wasm_structure_name_ptr",
   "_wasm_structure_type_count",
+  "_wasm_structure_region_size",
   "_wasm_biome_id",
   "_wasm_biome_colors",
 ];

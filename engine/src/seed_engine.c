@@ -72,6 +72,12 @@ int seed_engine_structure_viable_ctx(SeedEngineCtx *ctx, int struct_type,
     return isViableStructurePos(struct_type, &ctx->gen, block_x, block_z, 0);
 }
 
+void seed_engine_set_seed_ctx(SeedEngineCtx *ctx, uint64_t seed)
+{
+    if (ctx && ctx->initialized)
+        applySeed(&ctx->gen, ctx->dim, seed);
+}
+
 int seed_engine_get_spawn_ctx(SeedEngineCtx *ctx, int *out_x, int *out_z)
 {
     if (!ctx || !ctx->initialized || !out_x || !out_z)
@@ -172,6 +178,14 @@ const char *seed_engine_structure_name(int struct_type)
 int seed_engine_structure_type_count(void)
 {
     return FEATURE_NUM;
+}
+
+int seed_engine_structure_region_size(int struct_type, int mc)
+{
+    StructureConfig conf;
+    if (getStructureConfig(struct_type, mc, &conf))
+        return conf.regionSize;
+    return 0; /* structure not available at this version */
 }
 
 int seed_engine_biome_id(int mc, const char *name)
