@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minecraft Seed Map</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Seed Map</h1>
+    <label>Seed <input id="seed" type="text" value="262" /></label>
+    <label>Version
+      <select id="version">
+        <option value="1.18">1.18</option>
+        <option value="1.21">1.21</option>
+        <option value="newest">newest</option>
+      </select>
+    </label>
+    <label>Scale
+      <select id="scale">
+        <option value="4">biome (4)</option>
+        <option value="1">block (1)</option>
+        <option value="16">16</option>
+      </select>
+    </label>
+    <button id="generate">Generate</button>
+    <span id="status">Loading engine…</span>
+  </header>
+
+  <main>
+    <div class="map-wrap">
+      <canvas id="map" width="768" height="512"></canvas>
+      <div id="hover"></div>
+    </div>
+    <aside>
+      <h2>Position</h2>
+      <pre id="pos">—</pre>
+      <h2>Biomes in view</h2>
+      <ul id="legend"></ul>
+      <h2>Structures (near origin)</h2>
+      <button id="findStructures">Find villages in ±8 regions</button>
+      <ul id="structures"></ul>
+    </aside>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

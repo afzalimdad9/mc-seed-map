@@ -1,0 +1,86 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: #eee;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  align-items: center;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+header h1 { font-size: 1.1rem; margin: 0 8px 0 0; }
+
+label { display: flex; gap: 6px; align-items: center; font-size: 0.9rem; }
+
+input, select, button {
+  padding: 8px 10px;
+  font: inherit;
+  background: #222;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+button { cursor: pointer; background: #2d6a2d; border-color: #3f8f3f; }
+button:hover { background: #3a8a3a; }
+
+#status { font-size: 0.85rem; color: #9c9; }
+
+main {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  align-items: flex-start;
+}
+
+.map-wrap { position: relative; }
+
+canvas {
+  display: block;
+  image-rendering: pixelated;
+  border: 1px solid #444;
+  cursor: crosshair;
+  background: #000;
+}
+
+#hover {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid #666;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  display: none;
+  white-space: nowrap;
+}
+
+aside {
+  width: 280px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+aside h2 { font-size: 0.95rem; margin: 12px 0 6px; color: #9cf; }
+aside pre { margin: 0; font-size: 0.85rem; }
+aside ul { list-style: none; padding: 0; margin: 0; }
+aside li { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 0.85rem; }
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #555;
+  display: inline-block;
+  flex-shrink: 0;
+}

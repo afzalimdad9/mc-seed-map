@@ -11,6 +11,6 @@
     "test:wasm": "node scripts/test-wasm.mjs",
     "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm",
     "cli": "node apps/cli/src/index.js",
-    "dev": "python3 -m http.server 8080 -d apps/web"
+    "dev": "python3 -m http.server 8080"
   }
 }

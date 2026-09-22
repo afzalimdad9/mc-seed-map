@@ -81,8 +81,6 @@ export class JavaWorldGenerator {
     const ptr = this.module._malloc(8);
     if (!ptr) throw new Error("WASM malloc failed");
     try {
-      const mc =
-        typeof structureType === "number" ? this.mcCurrent : undefined;
       const ok = this.module._wasm_structure_pos(
         typeof structureType === "object" ? structureType.type : structureType,
         this.mcCurrent,
