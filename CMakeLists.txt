@@ -33,3 +33,6 @@ target_link_libraries(seed_engine PUBLIC cubiomes)
 
 add_executable(native_smoke engine/tests/native_smoke.c)
 target_link_libraries(native_smoke PRIVATE seed_engine cubiomes m)
+
+add_executable(golden_dump engine/tests/golden_dump.c)
+target_link_libraries(golden_dump PRIVATE seed_engine cubiomes m)

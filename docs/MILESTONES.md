@@ -30,12 +30,24 @@
 - [x] Biome colors: full Cubiomes palette (`initBiomeColors`)
 - [x] StructureName via WASM (`struct2str`)
 
-## M3 — Historical versions + validation matrix
+## M3 — Historical versions + validation matrix (DONE)
 
-- [ ] Test seeds for MC 1.7 / 1.12 / 1.16 / 1.17 / 1.18 / 1.19 / 1.20 / 1.21
-- [ ] Snapshot enum exposure (only what Cubiomes models)
-- [ ] Nether / End map rendering
-- [ ] Golden-file regression tests (native vs WASM byte-identical)
+- [x] Full MCVersion enum exposed from WASM (MC_B1_7 → MC_NEWEST); dynamic
+  version registry `packages/java/versions.js` — no hardcoded version list in JS
+- [x] Version label parsing mirrored from Cubiomes `str2mc` (`1.18`, `1.21 WD`,
+  `1.20.6`, …) with `registry.find()` + `versionFromString()` in CLI/web
+- [x] Validation matrix `scripts/test-versions.mjs`: 14 versions (1.0–1.20)
+  reproduce upstream Cubiomes biome-grid hashes (`tests.c` constants) byte-exactly
+- [x] Snapshot policy: Cubiomes models releases only — we expose exactly the enum;
+  no invented snapshot aliases
+- [x] Nether / End map rendering — web dimension select, CLI `--dimension`,
+  per-dimension scale defaults (1:1 nether/end), `getBiomeAt` y-coordinate
+  consistent at scale 4 (y=15) vs scale 1 (y=63)
+- [x] Golden-file regression: native `golden_dump` → `tests/golden/worlds.bin`
+  replayed through WASM byte-identical (10 records × versions/dims/seeds)
+- [x] Engine fix: bulk `generate_biomes_ctx` allocates `getMinCacheSize` scratch
+  internally (layered iterators read cache tail, e.g. `mapRiverMix` at `out + w*h`);
+  pre-1.18 bulk generation was memory-unsafe for caller-sized output buffers
 
 ## M4 — Bedrock + multi-platform SDK packaging
 

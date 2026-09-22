@@ -61,7 +61,25 @@ int seed_engine_generate_biomes_ctx(SeedEngineCtx *ctx, int x, int z,
     r.y = y;
     r.sy = 1;
 
-    return genBiomes(&ctx->gen, output, r);
+    /*
+     * genBiomes may need a larger scratch buffer than width*height: layered
+     * (pre-1.18) iterators write intermediates into the tail of the caller's
+     * cache (e.g. mapRiverMix reads at out + w*h). Allocate the exact size
+     * Cubiomes requires and copy only the resulting cells out.
+     */
+    size_t n = getMinCacheSize(&ctx->gen, r.scale, r.sx, r.sy, r.sz);
+    if (n == 0)
+        return -3;
+    int *scratch = (int *)calloc(n > 0 ? n : 1, sizeof(int));
+    if (!scratch)
+        return -4;
+
+    int rc = genBiomes(&ctx->gen, scratch, r);
+    if (rc == 0)
+        memcpy(output, scratch, sizeof(int) * (size_t)(width * height));
+    free(scratch);
+
+    return rc;
 }
 
 int seed_engine_structure_viable_ctx(SeedEngineCtx *ctx, int struct_type,
