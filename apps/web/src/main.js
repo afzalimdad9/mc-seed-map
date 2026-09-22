@@ -74,23 +74,25 @@ function generate() {
   const seed = parseSeed(document.getElementById("seed").value);
   const version = selectedVersion();
   const scale = Number(document.getElementById("scale").value);
+  const dimension = { overworld: 0, nether: -1, end: 1 }[document.getElementById("dimension").value] ?? 0;
   view.scale = scale;
 
   // pixels: canvas size; each pixel = one biome cell at this scale
   const w = canvas.width;
   const h = canvas.height;
+  const y = scale === 1 ? 63 : 15; // vertical is 1:1 only at block scale
 
-  statusEl.textContent = `Generating ${w}×${h} @ scale ${scale}…`;
+  statusEl.textContent = `Generating ${w}×${h} @ scale ${scale} (dim ${dimension})…`;
   const t0 = performance.now();
 
-  engine.initialize({ version: version.enumValue, seed, dimension: 0 });
+  engine.initialize({ version: version.enumValue, seed, dimension });
   const cells = engine.generateBiomes({
     x: view.originX,
     z: view.originZ,
     width: w,
     height: h,
     scale,
-    y: scale === 1 ? 63 : 15,
+    y,
   });
 
   const img = ctx.createImageData(w, h);
@@ -123,7 +125,7 @@ canvas.addEventListener("mousemove", (e) => {
 
   let label = `block (${blockX}, ${blockZ})`;
   try {
-    const biome = engine.getBiome(blockX, view.scale === 1 ? 63 : 63, blockZ, view.scale);
+    const biome = engine.getBiome(blockX, view.scale === 1 ? 63 : 15, blockZ, view.scale);
     label += ` · ${engine.biomeName(biome)} [${biome}]`;
   } catch { /* not initialized yet */ }
 

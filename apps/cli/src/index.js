@@ -106,7 +106,7 @@ if (cmd === "biome") {
 } else if (cmd === "map") {
   engine.initialize({ version: version.enumValue, seed, dimension });
   const size = Number(args.size ?? 64);
-  const scale = Number(args.scale ?? 4);
+  const scale = Number(args.scale ?? (dimension === 0 ? 4 : 1)); // nether/end are 1:1
   const palette = paletteFromEngine(engine);
   const cells = engine.generateBiomes({
     x: Number(args.x ?? -size / 2),

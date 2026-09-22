@@ -61,7 +61,20 @@ try {
   });
   console.log(mapOk ? "BROWSER MAP OK" : "BROWSER MAP FAIL");
 
-  process.exitCode = ok && mapOk ? 0 : 1;
+  // Nether dimension must also generate and render.
+  await page.selectOption("#dimension", "nether");
+  await page.click("#generate");
+  await page.waitForFunction(() => document.getElementById("status").textContent.includes("Done"), { timeout: 30000 });
+  const netherOk = await page.evaluate(() => {
+    const c = document.getElementById("map");
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    let set = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] || d[i + 1] || d[i + 2]) set++;
+    return set > 1000;
+  });
+  console.log(netherOk ? "BROWSER NETHER MAP OK" : "BROWSER NETHER MAP FAIL");
+
+  process.exitCode = ok && mapOk && netherOk ? 0 : 1;
 } catch (e) {
   console.log("BROWSER TEST ERROR:", e.message);
   for (const l of logs) console.log("LOG>", l);
