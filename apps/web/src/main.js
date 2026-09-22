@@ -1,6 +1,6 @@
 import { JavaWorldGenerator } from "../../../packages/java/engine.js";
 import { createVersionRegistry } from "../../../packages/java/versions.js";
-import { biomeColor, unknownColor } from "./biome-colors.js";
+import { paletteFromEngine, unknownColor } from "../../../packages/core/biome-colors.js";
 
 const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
@@ -12,6 +12,7 @@ const hoverEl = document.getElementById("hover");
 
 const engine = await new JavaWorldGenerator().init();
 const registry = createVersionRegistry(engine.module);
+const palette = paletteFromEngine(engine);
 statusEl.textContent = "Engine ready";
 
 // Map view state (block coordinates of top-left corner at current scale)
@@ -42,12 +43,13 @@ function selectedVersion() {
 function renderLegend(counts) {
   legendEl.innerHTML = "";
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  for (const [name, n] of sorted.slice(0, 16)) {
+  for (const [id, n] of sorted.slice(0, 16)) {
     const li = document.createElement("li");
     const sw = document.createElement("span");
     sw.className = "swatch";
-    const [r, g, b] = biomeColor(name);
+    const [r, g, b] = palette.rgb(id);
     sw.style.background = `rgb(${r},${g},${b})`;
+    const name = engine.biomeName(id);
     li.append(sw, document.createTextNode(`${name} (${n})`));
     legendEl.appendChild(li);
   }
@@ -79,9 +81,9 @@ function generate() {
   const img = ctx.createImageData(w, h);
   const counts = new Map();
   for (let i = 0; i < cells.length; i++) {
-    const name = engine.biomeName(cells[i]);
-    counts.set(name, (counts.get(name) || 0) + 1);
-    const color = cells[i] < 0 ? unknownColor() : biomeColor(name);
+    const id = cells[i];
+    counts.set(id, (counts.get(id) || 0) + 1);
+    const color = id < 0 ? unknownColor() : palette.rgb(id);
     const o = i * 4;
     img.data[o] = color[0];
     img.data[o + 1] = color[1];

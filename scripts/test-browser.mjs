@@ -48,7 +48,20 @@ try {
   // test proves the in-browser Web Worker pipeline returns real results.
   console.log(ok ? "BROWSER FINDER OK" : "BROWSER FINDER FAIL");
   if (!ok) for (const l of logs) console.log("LOG>", l);
-  process.exitCode = ok ? 0 : 1;
+
+  // Seed Map page: generate with the Cubiomes palette and confirm pixels.
+  await page.goto(`${BASE}/apps/web/index.html`);
+  await page.waitForFunction(() => document.getElementById("status").textContent.includes("Done"), { timeout: 30000 });
+  const mapOk = await page.evaluate(() => {
+    const c = document.getElementById("map");
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    let set = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] || d[i + 1] || d[i + 2]) set++;
+    return set > 1000;
+  });
+  console.log(mapOk ? "BROWSER MAP OK" : "BROWSER MAP FAIL");
+
+  process.exitCode = ok && mapOk ? 0 : 1;
 } catch (e) {
   console.log("BROWSER TEST ERROR:", e.message);
   for (const l of logs) console.log("LOG>", l);

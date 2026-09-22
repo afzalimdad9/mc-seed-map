@@ -10,7 +10,7 @@
 import { writeFileSync } from "node:fs";
 import { JavaWorldGenerator } from "../../../packages/java/engine.js";
 import { createVersionRegistry } from "../../../packages/java/versions.js";
-import { biomeColor, unknownColor } from "../../web/src/biome-colors.js";
+import { paletteFromEngine, unknownColor } from "../../../packages/core/biome-colors.js";
 import { runFind } from "./find.js";
 
 function parseArgs(argv) {
@@ -108,6 +108,7 @@ if (cmd === "biome") {
   engine.initialize({ version: version.enumValue, seed, dimension });
   const size = Number(args.size ?? 64);
   const scale = Number(args.scale ?? 4);
+  const palette = paletteFromEngine(engine);
   const cells = engine.generateBiomes({
     x: Number(args.x ?? -size / 2),
     z: Number(args.z ?? -size / 2),
@@ -118,7 +119,7 @@ if (cmd === "biome") {
   });
   const rgb = Buffer.alloc(size * size * 3);
   for (let i = 0; i < cells.length; i++) {
-    const c = cells[i] < 0 ? unknownColor() : biomeColor(engine.biomeName(cells[i]));
+    const c = cells[i] < 0 ? unknownColor() : palette.rgb(cells[i]);
     rgb[i * 3] = c[0];
     rgb[i * 3 + 1] = c[1];
     rgb[i * 3 + 2] = c[2];
