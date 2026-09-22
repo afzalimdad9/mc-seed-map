@@ -1,9 +1,24 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, existsSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
 
 mkdirSync("wasm/dist", { recursive: true });
 
-const emcc = process.env.EMCC || "emcc";
+function resolveEmcc() {
+  if (process.env.EMCC) return process.env.EMCC;
+  const candidates = [
+    path.join(homedir(), "emsdk/upstream/emscripten/emcc"),
+    "/usr/bin/emcc",
+    "/opt/emsdk/upstream/emscripten/emcc",
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return "emcc"; // rely on PATH
+}
+
+const emcc = resolveEmcc();
 const cubiomesDir = "vendor/cubiomes";
 
 // Matches upstream vendor/cubiomes/CMakeLists.txt source manifest.
