@@ -61,6 +61,27 @@ try {
   });
   console.log(mapOk ? "BROWSER MAP OK" : "BROWSER MAP FAIL");
 
+  // Structure overlay (M5): the default view is seed 262 / 1.18 / overworld at
+  // scale 4, origin (-192,-128), canvas 768×512 → block box (-768,-512)..(2304,1536).
+  const ov = await page.evaluate(() => window.__seedmapOverlay);
+  const ovCount = ov.length;
+  const ovViable = ov.filter((m) => m.viable).length;
+  const hasVillage = ov.some((m) => m.type === "village" && m.x === 192 && m.z === 208 && !m.viable);
+  const hasViableIgloo = ov.some((m) => m.type === "igloo" && m.x === -384 && m.z === 800 && m.viable);
+  const overlayOk = Array.isArray(ov) && ovCount === 129 && ovViable === 13 && hasVillage && hasViableIgloo;
+  console.log(overlayOk ? "BROWSER OVERLAY OK" : "BROWSER OVERLAY FAIL");
+  if (!overlayOk) console.log("OV>", JSON.stringify({ ovCount, ovViable, hasVillage, hasViableIgloo }));
+
+  // Toggling a structure type off must remove exactly its markers.
+  const villageCount = ov.filter((m) => m.type === "village").length;
+  await page.uncheck("input[value=village]");
+  await page.click("#generate");
+  await page.waitForFunction(() => document.getElementById("status").textContent.includes("Done"), { timeout: 30000 });
+  const ov2 = await page.evaluate(() => window.__seedmapOverlay);
+  const toggleOk = ov2.length === ovCount - villageCount;
+  console.log(toggleOk ? "BROWSER OVERLAY TOGGLE OK" : "BROWSER OVERLAY TOGGLE FAIL");
+  if (!toggleOk) console.log("TOG>", JSON.stringify({ before: ovCount, after: ov2.length, villageCount }));
+
   // Nether dimension must also generate and render.
   await page.selectOption("#dimension", "nether");
   await page.click("#generate");
@@ -74,7 +95,7 @@ try {
   });
   console.log(netherOk ? "BROWSER NETHER MAP OK" : "BROWSER NETHER MAP FAIL");
 
-  process.exitCode = ok && mapOk && netherOk ? 0 : 1;
+  process.exitCode = ok && mapOk && netherOk && overlayOk && toggleOk ? 0 : 1;
 } catch (e) {
   console.log("BROWSER TEST ERROR:", e.message);
   for (const l of logs) console.log("LOG>", l);

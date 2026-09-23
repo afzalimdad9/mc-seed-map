@@ -10,6 +10,7 @@
 import { writeFileSync } from "node:fs";
 import { createWorldGenerator } from "../../../packages/core/create-world-generator.js";
 import { unknownColor } from "../../../packages/core/biome-colors.js";
+import { structureOverlay, LANDMARK_TYPES } from "../../../packages/core/structures.js";
 import { runFind } from "./find.js";
 
 function parseArgs(argv) {
@@ -54,6 +55,7 @@ if (!cmd || args.help) {
 Commands:
   biome  --seed <s> --version <v> --x --y --z [--scale 1]
   map    --seed <s> --version <v> [--size 64] [--scale 4] [--out map.ppm]
+         [--structures] (default on for overworld; pass --no-structures)
   find   --version <v> [--count 5] [--max-seeds 100000] [--workers 4]
          [--biome <name>...] [--biome-grid 3]
          [--structure <name>...] [--radius 1024] [--structure-viable]
@@ -124,7 +126,39 @@ if (cmd === "biome") {
   }
   const out = typeof args.out === "string" ? args.out : `map-${seed}.ppm`;
   writePPM(out, size, size, rgb);
-  console.log(JSON.stringify({ out, size, scale, seed: seed.toString(), version: version.label }));
+  const report = { out, size, scale, seed: seed.toString(), version: version.label };
+
+  // Optional structure overlay: stamp markers into the PPM and report them.
+  if (args.structures !== false && dimension === 0) {
+    const mapX = Number(args.x ?? -size / 2);
+    const mapZ = Number(args.z ?? -size / 2);
+    const markers = structureOverlay({
+      engine,
+      seed,
+      mc: version.enumValue,
+      box: { x0: mapX * scale, z0: mapZ * scale, x1: (mapX + size) * scale, z1: (mapZ + size) * scale },
+    });
+    for (const m of markers) {
+      const px = Math.round((m.x - mapX * scale) / scale);
+      const pz = Math.round((m.z - mapZ * scale) / scale);
+      if (px < 0 || px >= size || pz < 0 || pz >= size) continue;
+      const i = (pz * size + px) * 3;
+      if (m.viable) {
+        rgb[i] = 255; rgb[i + 1] = 255; rgb[i + 2] = 255; // blink white = viable
+      } else {
+        rgb[i] = 90; rgb[i + 1] = 90; rgb[i + 2] = 90;     // hollow grey = attempt only
+      }
+    }
+    writePPM(out, size, size, rgb);
+    report.structures = {
+      enabled: LANDMARK_TYPES.map((t) => t.name),
+      count: markers.length,
+      viable: markers.filter((m) => m.viable).length,
+      markers: markers.map(({ type, x, z, viable }) => ({ type, x, z, viable })),
+    };
+  }
+
+  console.log(JSON.stringify(report));
 } else if (cmd === "find") {
   await runFind({ args, registry, version });
 } else {

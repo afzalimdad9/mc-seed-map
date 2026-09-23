@@ -82,6 +82,27 @@
   through `libseed_engine.so`: `C# SAMPLE PASSED`)
 - [x] **4f** This file; every sub-milestone landed as its own commit
 
+## M5 — Structure overlays + packaged features (IN PROGRESS)
+
+- [x] **5a Shared overlay engine**: `packages/core/structures.js`
+  `structureOverlay()` walks each landmark type's structure-region grid (cell
+  width = Cubiomes `getStructureRegionSize` in *chunk* units — block-space boxes
+  are converted via `c0 = Math.floor(x/16)` before region indexing) and returns
+  every attempted-generation position in the box together with its
+  terrain/biome viability. Chunkbase-style: position + `viable` flag.
+  - Correctness lock: `scripts/test-structures.mjs` freezes a 37-position,
+    5-viable known-answer for seed 262 / 1.18 box (-1280,0)→(0,1440);
+    determinism, and version-dependence vs 1.11 (village region 32→34)
+  - [x] **5b Web map overlay**: per-type checkboxes + legend chips; viable
+    markers rendered as filled diamonds with white cores, attempts as hollow
+    outlines; counts in status; `window.__seedmapOverlay` exposed for tests.
+    Headless-Chrome asserts exact default-view markers (129, 13 viable) and
+    that toggling a type off removes exactly its markers
+  - [x] **5c CLI**: `map --structures` (default on for overworld) stamps
+    markers into the PPM (white = viable, grey = attempt) and reports the full
+    marker list in JSON; golden pixel verified (igloo (-992,720) viable)
+  - [ ] still to land as this milestone proceeds…
+
 ## Explicit non-goals
 
 - Claiming support for a Minecraft version the engine does not model

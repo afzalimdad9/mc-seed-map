@@ -1,5 +1,6 @@
 import { createWorldGenerator } from "../../../packages/core/create-world-generator.js";
 import { unknownColor } from "../../../packages/core/biome-colors.js";
+import { structureOverlay, LANDMARK_TYPES, blockToPixel } from "../../../packages/core/structures.js";
 
 const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
@@ -7,7 +8,9 @@ const statusEl = document.getElementById("status");
 const posEl = document.getElementById("pos");
 const legendEl = document.getElementById("legend");
 const structuresEl = document.getElementById("structures");
+const structLegendEl = document.getElementById("structLegend");
 const hoverEl = document.getElementById("hover");
+const overlayToggles = document.getElementById("overlayToggles");
 
 const { engine, registry, palette } = await (async () => {
   const e = await createWorldGenerator();
@@ -70,6 +73,79 @@ function renderLegend(counts) {
   }
 }
 
+function buildOverlayToggles() {
+  overlayToggles.innerHTML = "";
+  for (const spec of LANDMARK_TYPES) {
+    const label = document.createElement("label");
+    label.className = "ovl";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = spec.name;
+    input.checked = true;
+    label.append(input, document.createTextNode(spec.name));
+    overlayToggles.appendChild(label);
+  }
+  renderStructLegend();
+}
+
+function renderStructLegend() {
+  structLegendEl.innerHTML = "";
+  const chips = document.createElement("li");
+  chips.className = "solid";
+  chips.textContent = "viable";
+  chips.title = "Generation-viable position (terrain/biome pass)";
+  const outlines = document.createElement("li");
+  outlines.className = "hollow";
+  outlines.textContent = "attempt only";
+  outlines.title = "Attempted generation position that could not generate here";
+  structLegendEl.append(chips, outlines);
+}
+
+function selectedOverlayTypes() {
+  const types = [];
+  for (const spec of LANDMARK_TYPES) {
+    const input = overlayToggles.querySelector(`input[value="${spec.name}"]`);
+    if (input && input.checked) types.push(spec);
+  }
+  return types;
+}
+
+function drawOverlay(markers, box) {
+  const w = canvas.width;
+  const h = canvas.height;
+  window.__seedmapOverlay = markers;
+  let visible = 0;
+  let viableCount = 0;
+  for (const m of markers) {
+    const { px, pz } = blockToPixel(m.x, m.z, box, view.scale);
+    if (px < -8 || px > w + 8 || pz < -8 || pz > h + 8) continue;
+    visible++;
+    const s = Math.max(2, Math.min(8, Math.round(2 + view.scale / 3)));
+    const cx = px, cy = pz;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s);
+    ctx.lineTo(cx + s, cy);
+    ctx.lineTo(cx, cy + s);
+    ctx.lineTo(cx - s, cy);
+    ctx.closePath();
+    if (m.viable) {
+      viableCount++;
+      ctx.fillStyle = m.color;
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      const hs = s / 3;
+      ctx.fillRect(cx - hs / 2, cy - hs / 2, hs, hs);
+    } else {
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = m.color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  return { visible, viableCount };
+}
+
 function generate() {
   const seed = parseSeed(document.getElementById("seed").value);
   const version = selectedVersion();
@@ -109,8 +185,26 @@ function generate() {
   }
   ctx.putImageData(img, 0, 0);
 
+  // Structure overlay (overworld only — region generation is overworld-only).
+  let overlayNote = "";
+  window.__seedmapOverlay = [];
+  if (dimension === 0) {
+    const types = selectedOverlayTypes();
+    if (types.length) {
+      const box = {
+        x0: view.originX * view.scale,
+        z0: view.originZ * view.scale,
+        x1: (view.originX + w) * view.scale,
+        z1: (view.originZ + h) * view.scale,
+      };
+      const markers = structureOverlay({ engine, seed, mc: version.enumValue, box, types });
+      const { visible, viableCount } = drawOverlay(markers, box);
+      overlayNote = ` · ${visible} structure${visible === 1 ? "" : "s"} (${viableCount} viable)`;
+    }
+  }
+
   const ms = Math.round(performance.now() - t0);
-  statusEl.textContent = `Done in ${ms} ms · seed ${seed} · ${version.label}`;
+  statusEl.textContent = `Done in ${ms} ms · seed ${seed} · ${version.label}${overlayNote}`;
   renderLegend(counts);
 }
 
@@ -142,6 +236,10 @@ document.getElementById("generate").addEventListener("click", () => {
   try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
 });
 
+overlayToggles.addEventListener("change", () => {
+  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+});
+
 document.getElementById("findStructures").addEventListener("click", () => {
   try {
     const seed = parseSeed(document.getElementById("seed").value);
@@ -169,4 +267,5 @@ document.getElementById("findStructures").addEventListener("click", () => {
   }
 });
 
+buildOverlayToggles();
 generate();

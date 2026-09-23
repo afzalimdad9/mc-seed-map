@@ -84,3 +84,34 @@ aside li { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-si
   display: inline-block;
   flex-shrink: 0;
 }
+
+.ovl-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-bottom: 6px;
+}
+
+.ovl-box label.ovl { font-size: 0.85rem; color: #ddd; }
+.ovl-box input { padding: 0; width: 14px; height: 14px; accent-color: #2d6a2d; }
+
+.struct-legend li {
+  font-size: 0.75rem;
+  color: #bbb;
+}
+.struct-legend li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.struct-legend li.solid::before {
+  background: #ffd54f;
+  transform: rotate(45deg);
+  border: 1px solid #fff;
+}
+.struct-legend li.hollow::before {
+  border: 1px dashed #ffd54f;
+  transform: rotate(45deg);
+}
