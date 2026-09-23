@@ -45,6 +45,7 @@ jobs:
       - name: Install Kotlin compiler (host JNI test)
         run: |
           curl -fsSL -o /tmp/kotlin.zip https://github.com/JetBrains/kotlin/releases/download/v2.1.20/kotlin-compiler-2.1.20.zip
+          mkdir -p "$HOME/.local/share"
           unzip -q -o -d "$HOME/.local/share" /tmp/kotlin.zip
           echo "KOTLINC=$HOME/.local/share/kotlinc/bin/kotlinc" >> "$GITHUB_ENV"
 
