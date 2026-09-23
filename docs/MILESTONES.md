@@ -82,7 +82,7 @@
   through `libseed_engine.so`: `C# SAMPLE PASSED`)
 - [x] **4f** This file; every sub-milestone landed as its own commit
 
-## M5 — Structure overlays + packaged features (IN PROGRESS)
+## M5 — Structure overlays + packaged features (DONE)
 
 - [x] **5a Shared overlay engine**: `packages/core/structures.js`
   `structureOverlay()` walks each landmark type's structure-region grid (cell
@@ -93,15 +93,20 @@
   - Correctness lock: `scripts/test-structures.mjs` freezes a 37-position,
     5-viable known-answer for seed 262 / 1.18 box (-1280,0)→(0,1440);
     determinism, and version-dependence vs 1.11 (village region 32→34)
-  - [x] **5b Web map overlay**: per-type checkboxes + legend chips; viable
-    markers rendered as filled diamonds with white cores, attempts as hollow
-    outlines; counts in status; `window.__seedmapOverlay` exposed for tests.
-    Headless-Chrome asserts exact default-view markers (129, 13 viable) and
-    that toggling a type off removes exactly its markers
-  - [x] **5c CLI**: `map --structures` (default on for overworld) stamps
-    markers into the PPM (white = viable, grey = attempt) and reports the full
-    marker list in JSON; golden pixel verified (igloo (-992,720) viable)
-  - [ ] still to land as this milestone proceeds…
+- [x] **5b Web map overlay**: per-type checkboxes + legend chips; viable
+  markers rendered as filled diamonds with white cores, attempts as hollow
+  outlines; counts in status; `window.__seedmapOverlay` exposed for tests.
+  Headless-Chrome asserts exact default-view markers (129, 13 viable) and
+  that toggling a type off removes exactly its markers
+- [x] **5c CLI**: `map --structures` (default on for overworld) stamps
+  markers into the PPM (white = viable, grey = attempt) and reports the full
+  marker list in JSON; golden pixel verified (igloo (-992,720) viable)
+- [x] **5d Map navigation**: spawn-point marker (gold star: seed 262 1.18 →
+  (420,-92)), drag-to-pan (origin offset = pixel delta), wheel-zoom cycling
+  1/4/16 that keeps the block under the cursor fixed and stays in sync with
+  the scale `<select>`, hover shows the structure/spawn label at exact
+  blocks. Browser test drives zoom invariance and pan deltas end-to-end.
+- [x] **5e Docs/README** above; `test:structures` wired into `npm test`
 
 ## Explicit non-goals
 

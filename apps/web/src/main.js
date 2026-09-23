@@ -40,7 +40,9 @@ const view = {
   blockPerCell: 4,    // world blocks represented by one pixel cell
   originX: -192,      // top-left in scaled coords
   originZ: -128,
+  spawn: null,        // { x, z } block coords of spawn (overworld only)
 };
+const SCALES = [1, 4, 16]; // wheel zoom cycle (up to less detail on Ctrl+down)
 
 function parseSeed(text) {
   const t = text.trim();
@@ -98,7 +100,11 @@ function renderStructLegend() {
   outlines.className = "hollow";
   outlines.textContent = "attempt only";
   outlines.title = "Attempted generation position that could not generate here";
-  structLegendEl.append(chips, outlines);
+  const spawn = document.createElement("li");
+  spawn.className = "spawn";
+  spawn.textContent = "spawn";
+  spawn.title = "Actual spawn position for the seed";
+  structLegendEl.append(chips, outlines, spawn);
 }
 
 function selectedOverlayTypes() {
@@ -110,10 +116,39 @@ function selectedOverlayTypes() {
   return types;
 }
 
+// @state markers kept from the last generate() so hover can label structures.
+let lastMarkers = [];
+let overlayVisible = 0;
+
+function drawSpawnMarker() {
+  if (!view.spawn) return;
+  const { px, pz } = blockToPixel(view.spawn.x, view.spawn.z, view.blockBox, view.scale);
+  if (px < -8 || px > canvas.width + 8 || pz < -8 || pz > canvas.height + 8) return;
+  const s = Math.max(3, Math.round(6 + view.scale / 2));
+  const cx = px, cy = pz;
+  // 4-point star with white outline (spawn)
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s);
+  ctx.lineTo(cx + s * 0.35, cy - s * 0.35);
+  ctx.lineTo(cx + s, cy);
+  ctx.lineTo(cx + s * 0.35, cy + s * 0.35);
+  ctx.lineTo(cx, cy + s);
+  ctx.lineTo(cx - s * 0.35, cy + s * 0.35);
+  ctx.lineTo(cx - s, cy);
+  ctx.lineTo(cx - s * 0.35, cy - s * 0.35);
+  ctx.closePath();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = "#ffcc00";
+  ctx.fill();
+}
+
 function drawOverlay(markers, box) {
   const w = canvas.width;
   const h = canvas.height;
   window.__seedmapOverlay = markers;
+  lastMarkers = markers;
   let visible = 0;
   let viableCount = 0;
   for (const m of markers) {
@@ -143,15 +178,16 @@ function drawOverlay(markers, box) {
       ctx.globalAlpha = 1;
     }
   }
+  overlayVisible = visible;
+  drawSpawnMarker();
   return { visible, viableCount };
 }
 
 function generate() {
   const seed = parseSeed(document.getElementById("seed").value);
   const version = selectedVersion();
-  const scale = Number(document.getElementById("scale").value);
+  const scale = view.scale;
   const dimension = { overworld: 0, nether: -1, end: 1 }[document.getElementById("dimension").value] ?? 0;
-  view.scale = scale;
 
   // pixels: canvas size; each pixel = one biome cell at this scale
   const w = canvas.width;
@@ -170,6 +206,21 @@ function generate() {
     scale,
     y,
   });
+
+  view.spawn = null;
+  const box = {
+    x0: view.originX * view.scale,
+    z0: view.originZ * view.scale,
+    x1: (view.originX + w) * view.scale,
+    z1: (view.originZ + h) * view.scale,
+  };
+  view.blockBox = box;
+  window.__seedmapOrigin = { x: view.originX, z: view.originZ, scale: view.scale };
+  if (dimension === 0) {
+    const g = engine.createGenerator({ version: version.enumValue, seed, dimension: 0 });
+    try { view.spawn = g.getSpawn(); } finally { g.destroy(); }
+  }
+  window.__seedmapSpawn = view.spawn;
 
   const img = ctx.createImageData(w, h);
   const counts = new Map();
@@ -191,16 +242,13 @@ function generate() {
   if (dimension === 0) {
     const types = selectedOverlayTypes();
     if (types.length) {
-      const box = {
-        x0: view.originX * view.scale,
-        z0: view.originZ * view.scale,
-        x1: (view.originX + w) * view.scale,
-        z1: (view.originZ + h) * view.scale,
-      };
       const markers = structureOverlay({ engine, seed, mc: version.enumValue, box, types });
       const { visible, viableCount } = drawOverlay(markers, box);
-      overlayNote = ` · ${visible} structure${visible === 1 ? "" : "s"} (${viableCount} viable)`;
+      overlayNote = ` · ${visible} struct${visible === 1 ? "" : "s"} (${viableCount} viable)`;
     }
+  } else {
+    lastMarkers = [];
+    overlayVisible = 0;
   }
 
   const ms = Math.round(performance.now() - t0);
@@ -223,6 +271,10 @@ canvas.addEventListener("mousemove", (e) => {
     label += ` · ${engine.biomeName(biome)} [${biome}]`;
   } catch { /* not initialized yet */ }
 
+  const m = lastMarkers.find((mm) => mm.x === blockX && mm.z === blockZ);
+  if (m) label += ` · ${m.type}${m.viable ? "" : " (attempt only)"}`;
+  if (view.spawn && view.spawn.x === blockX && view.spawn.z === blockZ) label += " · spawn";
+
   posEl.textContent = label;
   hoverEl.style.display = "block";
   hoverEl.style.left = `${e.clientX - rect.left + 12}px`;
@@ -232,11 +284,75 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mouseleave", () => { hoverEl.style.display = "none"; });
 
+// Pan: drag with the primary button; redraw on release.
+const drag = { active: false, startX: 0, startY: 0, originX: 0, originZ: 0, moved: false, lastX: 0, lastY: 0 };
+canvas.addEventListener("mousedown", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  drag.active = true;
+  drag.moved = false;
+  drag.startX = (e.clientX - rect.left) * (canvas.width / rect.width);
+  drag.startY = (e.clientY - rect.top) * (canvas.height / rect.height);
+  drag.lastX = drag.startX;
+  drag.lastY = drag.startY;
+  drag.originX = view.originX;
+  drag.originZ = view.originZ;
+  canvas.style.cursor = "grabbing";
+});
+window.addEventListener("mousemove", (e) => {
+  if (!drag.active) return;
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const pz = (e.clientY - rect.top) * (canvas.height / rect.height);
+  drag.lastX = px;
+  drag.lastY = pz;
+  if (!drag.moved && Math.hypot(px - drag.startX, pz - drag.startY) < 3) return;
+  drag.moved = true;
+});
+window.addEventListener("mouseup", () => {
+  if (!drag.active) return;
+  drag.active = false;
+  canvas.style.cursor = "crosshair";
+  if (!drag.moved) return;
+  const dx = drag.lastX - drag.startX;
+  const dy = drag.lastY - drag.startY;
+  if (dx === 0 && dy === 0) return;
+  view.originX = Math.round(drag.originX - dx);
+  view.originZ = Math.round(drag.originZ - dy);
+  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+});
+
+// Wheel: zoom to the cursor, keeping the block under it stationary.
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const pz = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const i = SCALES.indexOf(view.scale);
+  const next = e.deltaY < 0 ? SCALES[Math.max(0, i - 1)] : SCALES[Math.min(SCALES.length - 1, i + 1)];
+  if (next === view.scale) return;
+  const blockX = (view.originX + px) * view.scale;
+  const blockZ = (view.originZ + pz) * view.scale;
+  view.scale = next;
+  view.blockPerCell = next;
+  document.getElementById("scale").value = String(next);
+  view.originX = Math.round(blockX / next - px);
+  view.originZ = Math.round(blockZ / next - pz);
+  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+}, { passive: false });
+
 document.getElementById("generate").addEventListener("click", () => {
   try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
 });
 
 overlayToggles.addEventListener("change", () => {
+  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+});
+
+document.getElementById("scale").addEventListener("change", () => {
+  const v = Number(document.getElementById("scale").value);
+  if (!SCALES.includes(v)) return;
+  view.scale = v;
+  view.blockPerCell = v;
   try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
 });
 

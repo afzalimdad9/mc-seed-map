@@ -30,9 +30,17 @@ npm run dev
 # CLI
 npm run cli -- biome --seed 262 --version 1.18 --x 0 --y 63 --z 0
 npm run cli -- map --seed 262 --version 1.18 --size 64 --out map.ppm
+npm run cli -- map --seed 262 --version 1.18 --size 128 --structures --out map.ppm
 npm run cli -- find --version 1.18 --count 5 --structure village --reg-radius 4
 npm run cli -- versions
 ```
+
+The browser seed map specialises like Chunkbase: structure overlays with
+per-type toggles (viable vs attempt-only markers), a spawn-point marker,
+hover labels at the exact structure/spawn block, drag-to-pan and
+wheel-zoom that stays anchored to the block under the cursor. `map
+--structures` stamps the same markers into the PPM and reports them as
+JSON; use `--no-structures` to skip.
 
 ## Validated reference
 

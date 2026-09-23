@@ -72,6 +72,46 @@ try {
   console.log(overlayOk ? "BROWSER OVERLAY OK" : "BROWSER OVERLAY FAIL");
   if (!overlayOk) console.log("OV>", JSON.stringify({ ovCount, ovViable, hasVillage, hasViableIgloo }));
 
+  // M5b spawn marker + hover labels, while village overlay is still enabled.
+  const spawn = await page.evaluate(() => window.__seedmapSpawn);
+  const spawnOk = spawn && spawn.x === 420 && spawn.z === -92;
+  console.log(spawnOk ? "BROWSER SPAWN OK" : "BROWSER SPAWN FAIL");
+  if (!spawnOk) console.log("SPAWN>", JSON.stringify(spawn));
+
+  // Convert canvas-local pixels to absolute viewport coordinates (the canvas
+  // may be laid out with an offset / scaled in CSS).
+  const mapCtx = await page.evaluate(() => {
+    const c = document.getElementById("map");
+    const r = c.getBoundingClientRect();
+    return { x: r.left, y: r.top, w: r.width, h: r.height, W: c.width, H: c.height };
+  });
+  const toScreen = (px, py) => ({
+    x: mapCtx.x + px * (mapCtx.w / mapCtx.W),
+    y: mapCtx.y + py * (mapCtx.h / mapCtx.H),
+  });
+  const center = toScreen(384, 256);
+
+  // Find a hover label that contains `want` near canvas-local cell (px,py),
+  // tolerating border/rounding shifts.
+  async function hoverScan(px, py, want) {
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        const s = toScreen(px + dx, py + dy);
+        await page.mouse.move(s.x, s.y);
+        const t = await page.textContent("#pos");
+        if (t.includes(want)) return t;
+      }
+    }
+    return null;
+  }
+
+  // Hover the single-block cells of the village (192,208) and spawn (420,-92).
+  const villageHover = await hoverScan(240, 180, "village");
+  const spawnHover = await hoverScan(297, 105, "spawn");
+  const hoverOk = villageHover && spawnHover;
+  console.log(hoverOk ? "BROWSER HOVER OK" : "BROWSER HOVER FAIL");
+  if (!hoverOk) console.log("HOVER>", JSON.stringify({ villageHover, spawnHover }));
+
   // Toggling a structure type off must remove exactly its markers.
   const villageCount = ov.filter((m) => m.type === "village").length;
   await page.uncheck("input[value=village]");
@@ -81,6 +121,52 @@ try {
   const toggleOk = ov2.length === ovCount - villageCount;
   console.log(toggleOk ? "BROWSER OVERLAY TOGGLE OK" : "BROWSER OVERLAY TOGGLE FAIL");
   if (!toggleOk) console.log("TOG>", JSON.stringify({ before: ovCount, after: ov2.length, villageCount }));
+
+  // M5b zoom: wheel at canvas center must keep the block under the cursor fixed.
+  const oBefore = await page.evaluate(() => window.__seedmapOrigin);
+  await page.mouse.move(center.x, center.y);
+  await page.mouse.wheel(0, -120); // zoom in 4 -> 1
+  await page.waitForFunction(
+    () => window.__seedmapOrigin && window.__seedmapOrigin.scale === 1,
+    { timeout: 30000 },
+  );
+  const oZoomed = await page.evaluate(() => window.__seedmapOrigin);
+  const centerBlockBefore = (oBefore.x + 384) * oBefore.scale;
+  const centerBlockZoomed = (oZoomed.x + 384) * oZoomed.scale;
+  const centerZBefore = (oBefore.z + 256) * oBefore.scale;
+  const centerZZoomed = (oZoomed.z + 256) * oZoomed.scale;
+  const zoomOk =
+    oZoomed.scale === 1 &&
+    centerBlockBefore === centerBlockZoomed &&
+    centerZBefore === centerZZoomed;
+  await page.mouse.wheel(0, 120); // zoom out 1 -> 4
+  await page.waitForFunction(
+    () => window.__seedmapOrigin && window.__seedmapOrigin.scale === 4,
+    { timeout: 30000 },
+  );
+  const oOut = await page.evaluate(() => window.__seedmapOrigin);
+  const zoomOutOk = oOut.scale === 4 && (oOut.x + 384) * oOut.scale === centerBlockBefore;
+  console.log(zoomOk && zoomOutOk ? "BROWSER ZOOM OK" : "BROWSER ZOOM FAIL");
+  if (!(zoomOk && zoomOutOk)) console.log("ZOOM>", JSON.stringify({ oBefore, oZoomed, oOut }));
+
+  // M5b pan: dragging (100,100) -> (160,140) pans by the pixel delta / scale.
+  const p1 = toScreen(100, 100);
+  const p2 = toScreen(160, 140);
+  await page.mouse.move(p1.x, p1.y);
+  await page.mouse.down();
+  await page.mouse.move(p2.x, p2.y, { steps: 5 });
+  await page.mouse.up();
+  const wantX = oOut.x - 60; // 1 pixel = 1 scaled cell in the origin offset
+  const wantZ = oOut.z - 40;
+  await page.waitForFunction(
+    (wanted) => {
+      const o = window.__seedmapOrigin;
+      return o && o.x === wanted.x && o.z === wanted.z;
+    },
+    { x: wantX, z: wantZ },
+    { timeout: 30000 },
+  );
+  console.log("BROWSER PAN OK");
 
   // Nether dimension must also generate and render.
   await page.selectOption("#dimension", "nether");
@@ -95,7 +181,7 @@ try {
   });
   console.log(netherOk ? "BROWSER NETHER MAP OK" : "BROWSER NETHER MAP FAIL");
 
-  process.exitCode = ok && mapOk && netherOk && overlayOk && toggleOk ? 0 : 1;
+  process.exitCode = ok && mapOk && netherOk && overlayOk && toggleOk && spawnOk && hoverOk && zoomOk && zoomOutOk ? 0 : 1;
 } catch (e) {
   console.log("BROWSER TEST ERROR:", e.message);
   for (const l of logs) console.log("LOG>", l);

@@ -115,3 +115,8 @@ aside li { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-si
   border: 1px dashed #ffd54f;
   transform: rotate(45deg);
 }
+.struct-legend li.spawn::before {
+  background: #ffcc00;
+  border: 1px solid #fff;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+}
