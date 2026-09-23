@@ -14,6 +14,7 @@
     "test:versions": "node scripts/test-versions.mjs",
     "gen:golden": "cmake -S . -B build/native >/dev/null && cmake --build build/native --target golden_dump >/dev/null && ./build/native/golden_dump tests/golden/worlds.bin",
     "test:golden": "node scripts/test-golden.mjs",
+    "test:golden-regen": "mkdir -p /tmp/opencode && cmake -S . -B build/native >/dev/null && cmake --build build/native --target golden_dump >/dev/null && ./build/native/golden_dump /tmp/opencode/worlds.regen.bin >/dev/null && cmp tests/golden/worlds.bin /tmp/opencode/worlds.regen.bin && echo 'golden regen: byte-identical'",
     "build:android": "./bindings/android/build-android.sh",
     "test:android": "bindings/android/test-host.sh",
     "test:android-device": "bindings/android/test-device.sh",
@@ -22,7 +23,7 @@
     "test:csharp": "bash bindings/csharp/run.sh",
     "test:interface": "node scripts/test-interface.mjs",
     "test:browser": "node scripts/test-browser.mjs",
-    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:structures && npm run test:versions && npm run test:golden && npm run test:browser && npm run test:interface && npm run test:android && npm run test:android-device && npm run test:swift && npm run test:csharp",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:structures && npm run test:versions && npm run test:golden && npm run test:golden-regen && npm run test:browser && npm run test:interface && npm run test:android && npm run test:android-device && npm run test:swift && npm run test:csharp",
     "cli": "node apps/cli/src/index.js",
     "dev": "python3 -m http.server 8080"
   },
