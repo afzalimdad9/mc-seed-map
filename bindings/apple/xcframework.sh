@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # Build the shared seed engine as an Apple XCFramework.
 #
-# STATUS: DRAFT — can only run on macOS with Xcode Command Line Tools. It is
-# committed here, but this Linux environment has no Apple SDK so it cannot be
-# executed here. Expected flow once run on a Mac:
+# Runs locally on macOS AND in CI: the workflow's "macos" job executes this,
+# lipo-checks the five slices and uploads the framework as an artifact.
+# Output contains one static library per (sdk, arch) speaking the same
+# seed_engine.h ABI, so the Swift/C#/Kotlin-style facades above it work
+# unchanged.
 #
 #     bash bindings/apple/xcframework.sh
 #     ls bindings/apple/seed_engine.xcframework
-#
-# The output contains one static library per (sdk, arch) speaking the same
-# seed_engine.h ABI, so the Swift/C#/Kotlin-style facades above it work
-# unchanged. To consume it from the root SwiftPM package, add a binary target
-# authored on the Mac (signing/notarization are out of scope for this repo).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -37,11 +34,11 @@ done
 [[ -f "$ROOT/vendor/cubiomes/quadbase.c" ]] && C_SRCS+=( "$ROOT/vendor/cubiomes/quadbase.c" )
 
 TARGETS=(
-  "iphoneos:arm64"
-  "iphonesimulator:arm64"
-  "iphonesimulator:x86_64"
-  "macosx:arm64"
-  "macosx:x86_64"
+  "iphoneos:arm64:-miphoneos-version-min=14.0"
+  "iphonesimulator:arm64:-mios-simulator-version-min=14.0"
+  "iphonesimulator:x86_64:-mios-simulator-version-min=14.0"
+  "macosx:arm64:-mmacosx-version-min=11.0"
+  "macosx:x86_64:-mmacosx-version-min=11.0"
 )
 
 LIB_DIR="$BUILD/libs"
@@ -49,12 +46,13 @@ mkdir -p "$LIB_DIR"
 LIBS=()
 
 for entry in "${TARGETS[@]}"; do
-  sdk="${entry%%:*}"; arch="${entry##*:}"
+  sdk="${entry%%:*}"; rest="${entry#*:}"
+  arch="${rest%%:*}"; minver="${rest#*:}"
   obj="$BUILD/obj-$sdk-$arch"; mkdir -p "$obj"
   lib="$LIB_DIR/lib${NAME}-${sdk}-${arch}.a"
   sdkroot="$(xcrun --sdk "$sdk" --show-sdk-path)"
   for src in "${C_SRCS[@]}"; do
-    xcrun clang -target "${arch}-apple-${sdk}" -isysroot "$sdkroot" \
+    xcrun clang -arch "$arch" "$minver" -isysroot "$sdkroot" \
       -fPIC -fwrapv -O2 \
       -I "$ROOT/engine/include" -I "$ROOT/vendor/cubiomes" \
       -c "$src" -o "$obj/$(basename "$src" .c).o"
