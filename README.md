@@ -7,13 +7,18 @@ Chunkbase-style **Seed Map** and **Seed Finder** sharing one world-generation en
 | Generation core | [Cubiomes](https://github.com/Cubitect/cubiomes) (C, Minecraft **Java** Edition) |
 | Native build | CMake + GCC → `libseed_engine.a` |
 | Browser/CLI engine | Emscripten → WebAssembly |
-| Frontend | Vanilla HTML/CSS/JS + Canvas |
+| Frontend | Vanilla HTML/CSS/JS + Canvas (Web Worker parallel rendering) |
 | CLI | Node.js |
-| Future targets | Kotlin (Android), Swift (iOS/macOS), C# (Windows) via the same C ABI — see [`sdk/README.md`](sdk/README.md) |
+| Ports | Android (JNI/AAR, on-device verified), Swift CLI, C# P/Invoke, Python ctypes — all via the same C ABI |
 
 ## Status
 
-See [`docs/MILESTONES.md`](docs/MILESTONES.md). **M1 is done:** native + WASM engine, browser map, CLI — all cross-validated.
+See [`docs/MILESTONES.md`](docs/MILESTONES.md). **M1–M6 are done:** verified
+Java engine (native + WASM), browser seed map with structure overlays,
+spawn + pan + zoom + landmark finder, seed finder (CLI + web), version
+registry, golden-file regression, and working Android / Swift / C# / Python
+bindings. Bedrock is deliberately unsupported — `docs/bedrock.md` carries the
+verified evaluation and roadmap.
 
 ## Quick start (Linux)
 
@@ -38,9 +43,16 @@ npm run cli -- versions
 The browser seed map specialises like Chunkbase: structure overlays with
 per-type toggles (viable vs attempt-only markers), a spawn-point marker,
 hover labels at the exact structure/spawn block, drag-to-pan and
-wheel-zoom that stays anchored to the block under the cursor. `map
---structures` stamps the same markers into the PPM and reports them as
-JSON; use `--no-structures` to skip.
+wheel-zoom that stays anchored to the block under the cursor — rendered in
+parallel across Web Workers. A "Landmark finder" searches the nearest viable
+structure to spawn (with a target ring on the map), and seed-finder results
+link straight to the map via `#seed=…`. `map --structures` stamps the same
+markers into the PPM and reports them as JSON; use `--no-structures` to skip.
+
+```bash
+# Python binding (builds libseed_engine.so + known-answer sample)
+npm run test:python
+```
 
 ## Validated reference
 
@@ -57,18 +69,19 @@ JSON; use `--no-structures` to skip.
 engine/          C ABI wrapper (seed_engine.h/.c) + WASM bindings + native test
 vendor/cubiomes/ pinned e61f905 (MIT)
 wasm/dist/       build artifacts (gitignored)
-packages/core/   shared seed parsing / FFI helpers
+packages/core/   shared seed parsing / FFI helpers / structure overlay
 packages/java/   JS WorldGenerator (WASM) + version registry
-apps/web/        Seed Map (canvas)
+packages/finder/ composable filters + search engine (Node/CLI/browser)
+apps/web/        Seed Map (canvas, worker-rendered) + Seed Finder
 apps/cli/        CLI (biome / map / find / versions)
-scripts/         build-wasm.mjs, test-wasm.mjs
-sdk/             multi-platform packaging strategy
-docs/            milestones + support policy
+bindings/        android / swift / csharp / python port bindings
+scripts/         build-wasm.mjs + test suites (browser / wasm / golden / …)
+docs/            milestones + bedrock evaluation / roadmap
 ```
 
 ## Version support policy
 
 - Cubiomes models **Minecraft Java** biome/structure generation only.
 - Version enums (`MC_1_18=22`, …) are read from the compiled WASM at runtime — never hardcoded in JS.
-- **Bedrock** requires a separate engine adapter; Java results are never reused for Bedrock seeds.
+- **Bedrock**: no public Bedrock generation library exists — `docs/bedrock.md` documents the audited `cubiomes-bedrock` (upstream Java, re-worded) and the phased roadmap; Java results are never reused for Bedrock seeds.
 - Unsupported versions fail explicitly; we never guess.

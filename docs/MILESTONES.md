@@ -113,3 +113,40 @@
 - Claiming support for a Minecraft version the engine does not model
 - Silently mapping Bedrock seeds through Java generation
 - Future snapshots before their algorithms exist in Cubiomes
+
+## M6 — Performance, product polish, platform coverage (DONE)
+
+- [x] **6a Parallel map rendering**: `apps/web/src/render-worker.js` runs its
+  own WASM instance per worker; `generate()` splits the canvas into
+  `min(4, h)` horizontal bands computed across a reusable `RenderPool`
+  (epoch-guarded so superseded renders stop drawing), filling/blitting the
+  ImageData as bands land; single-threaded `generateBiomes` fallback when
+  Workers are unavailable. Output is bit-identical to the sync path — full
+  browser suite green.
+- [x] **6b Finder page upgrades**: map "Landmark finder" (per-type structure +
+  radius, `nearestLandmark()` walks `structureOverlay` around spawn, prefers
+  viable results, draws a white/pink target ring, exposes `__seedmapNearest`);
+  finder results link `map → index.html#seed=<signed>` and the map page loads
+  the hash on startup. Browser tests freeze the nearest-viable-village known
+  answer (seed 262 spawn → (-800,-240), 1229 blocks) and the deep-link flow.
+- [x] **6c Golden-regen health check**: `npm run test:golden-regen` regenerates
+  `tests/golden/worlds.bin` to a temp path and asserts byte-identity with the
+  committed file (deterministic, verified stable across runs); wired into
+  `npm test`.
+- [x] **6d Python binding**: `bindings/python/seedmaps.py` ctypes wrapper over
+  the full `seed_engine` C ABI (version helpers, default context, thread-safe
+  handle API incl. spawn); `run.sh` builds `libseed_engine.so` (same cc line
+  as C#) and runs the known-answer sample (`PYTHON SAMPLE PASSED`:
+  1.18==22, biome 14, handle spawn (420,-92), grid cells[0]==cells[63]==49);
+  `test:python` in the chain.
+- [x] **6e Bedrock roadmap**: audited the only public `cubiomes-bedrock`
+  (fragrantresult186) by cloning it — it is upstream Java Cubiomes with a
+  re-worded README (all generator.h history is Cubitect's; only incidental
+  'bedrock' comments), NOT Bedrock support; no other public Bedrock generation
+  library exists. `docs/bedrock.md` now carries the verified evaluation and an
+  honest roadmap: Phase A = 1.18+ biome-only backend reusing the Java multi-
+  noise source on sign-extended i32 seeds (gated to biome-matching versions),
+  Phase B = structure candidates + BDS `locate` verification harness,
+  Phase C = pre-1.18 / spawn = non-goal without independent re-engineering.
+
+## Explicit non-goals
