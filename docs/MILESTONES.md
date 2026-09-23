@@ -62,18 +62,24 @@
   x86_64 (exports verified with `nm -D`), JNI glue (`Java_com_seedmaps_*`),
   Kotlin `SeedWorldGen.kt`, host-testable impl core (`test-host.sh` smoke),
   and a host JVM run of the REAL glue + Kotlin facade (JDK + Kotlin installed
-  in the environment). AAR packaging deferred: no Android device/emulator here
-- [x] **4c+ host-JVM JNI test**: `test-host.sh` builds `dist/host/libseed_engine.so`
+  in the environment)
+- [x] **4c+ host-JVM JNI test**: `test-host.sh` builds `dist-host/libseed_engine.so`
   with the actual `Java_com_seedmaps_NativeEngine_*` exports, compiles
   `SeedWorldGen.kt` + `SeedWorldGenHostTest.kt` with kotlinc and runs the
   known-answer green on the JVM
+- [x] **4c++ AAR + on-device test**: real `seedmaps-release.aar` (classes.jar +
+  3 ABI jniLibs) built with Gradle 8.14.3 + AGP 8.13.2 + Kotlin 2.1.20 and ran
+  on an x86_64 emulator — `SEEDMAPS_ONDEVICE=PASS` (14 / 49 / hi-half). Fixed
+  bionic x86_64 gaps (`sincos`/`erf` missing from shared libm) by linking the
+  NDK static libm.a for that ABI; committed AAR at
+  `bindings/android/dist/aar/seedmaps-release.aar`
 - [x] **4d Swift**: root-level SwiftPM package, `CSeedEngine` C module (symlinked
   sources, single-source header sync) + `SeedToolsCLI` example — built and RUN
   on Linux with output matching the golden file. XCFramework builds need an
   Apple SDK; engine C code is platform-neutral for it
-- [x] **4e C#**: P/Invoke binding + sample in `bindings/csharp/` (source-only —
-  no .NET SDK here; signatures mirror `seed_engine.h`, expectations from the
-  golden contract)
+- [x] **4e C#**: P/Invoke binding + sample in `bindings/csharp/` — now built and
+  RUN (`.NET SDK 8` installed; `dotnet run` reproduces the golden anchors
+  through `libseed_engine.so`: `C# SAMPLE PASSED`)
 - [x] **4f** This file; every sub-milestone landed as its own commit
 
 ## Explicit non-goals

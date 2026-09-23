@@ -5,7 +5,7 @@
 # jni.h; location via $JAVA_HOME or the known user-space install.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-OUT="$(cd "$(dirname "$0")" && pwd)/dist/host"
+OUT="$(cd "$(dirname "$0")" && pwd)/dist-host"
 
 JH="${JAVA_HOME:-/home/afzalimdad9/.local/share/jdk}"
 if [[ ! -f "$JH/include/jni.h" ]]; then

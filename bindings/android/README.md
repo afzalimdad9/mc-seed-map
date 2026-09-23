@@ -26,7 +26,7 @@ npm run build:native && bindings/android/test-host.sh
 ```
 
 Produces `bindings/android/dist/{arm64-v8a,armeabi-v7a,x86_64}/libseed_engine.so`
-(jniLibs layout) plus `dist/host/libseed_engine.so` for the host-JVM test.
+(jniLibs layout) plus `dist-host/libseed_engine.so` for the host-JVM test.
 Verified: every ABI is the correct ELF class/machine and exports all 8
 `Java_com_seedmaps_NativeEngine_*` symbols.
 
@@ -39,9 +39,13 @@ here equals a seed reproduced in the web app or CLI.
 
 ## Status
 
-- Native `.so` for 3 ABIs: built + exported-symbol verified.
+- Native `.so` for 3 ABIs: built + exported-symbol verified; x86_64 links
+  static `libm.a` (bionic shared libm lacks `sincos`/`erf`, found via emulator
+  `UnsatisfiedLinkError`).
 - Impl layer correctness: host-tested.
 - JNI/Kotlin runtime path: **host-JVM tested** — `test-host.sh` loads the JNI
   glue via `System.loadLibrary` and gets green known-answers through the real
-  Kotlin facade (`ANDROID KOTLIN + JNI TEST PASSED`). NDK `.so`s for an actual
-  Android device still require a device/emulator to run.
+  Kotlin facade (`ANDROID KOTLIN + JNI TEST PASSED`).
+- **On-device tested**: AAR (`dist/aar/seedmaps-release.aar`) + test APK run on
+  an x86_64 emulator (Android 17/API 37): `SEEDMAPS_ONDEVICE=PASS` with the
+  exact WASM/CLI anchors (14, 49, hi-half divergence) — `test-device.sh`.

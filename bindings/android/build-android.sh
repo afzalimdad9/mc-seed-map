@@ -51,12 +51,25 @@ for abi in "${!TRIPLES[@]}"; do
     echo "error: $cc missing for $abi" >&2
     exit 1
   fi
+  # Link a shared version of libm (also required as DT_NEEDED on the target).
+# x86_64 bionic's *shared* libm.so is missing sincos()/erf()/exp() which
+# clang/cubiomes reference (fine on glibc and on ARM bionic), so x86_64 links
+# the NDK's static libm.a to embed those symbols instead.
+LIBM_STATIC=""
+if [[ "$abi" == "x86_64" ]]; then
+  # bionic shared libm on x86_64 is missing sincos()/erf()/exp() — pull the
+  # NDK static libm.a (e.g. sysroot/usr/lib/x86_64-linux-android/libm.a) so
+  # those symbols are embedded in the .so.
+  LIBM_STATIC="$TOOLCHAIN/sysroot/usr/lib/${triple%-android21}-android/libm.a"
+  [[ -f "$LIBM_STATIC" ]] || { echo "error: static libm.a not found ($LIBM_STATIC)" >&2; exit 1; }
+fi
   mkdir -p "$OUT/$abi"
   "$cc" -O2 -fwrapv -fPIC -shared \
     "${INCS[@]}" \
     "${ENGINE_SRC[@]}" \
     "$ROOT/vendor/cubiomes/util.c" \
     -Wl,--exclude-libs,ALL \
+    $LIBM_STATIC -lm \
     -o "$OUT/$abi/libseed_engine.so"
   echo "  $abi -> $OUT/$abi/libseed_engine.so ($(du -h "$OUT/$abi/libseed_engine.so" | cut -f1))"
 done

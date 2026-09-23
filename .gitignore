@@ -6,4 +6,11 @@ wasm/dist/
 *.so
 *.wasm.map
 .build/
+*/*.bin/
+bindings/android/aar/*/build/
+bindings/android/aar/.gradle/
+bindings/android/aar/local.properties
+bindings/csharp/bin/
+bindings/csharp/obj/
+.bindings-tmp/
 .DS_Store

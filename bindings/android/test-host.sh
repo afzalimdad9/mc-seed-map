@@ -42,7 +42,7 @@ else
     "$KOTLINC" "$BIN/kotlin/SeedWorldGen.kt" "$BIN/kotlin/SeedWorldGenHostTest.kt" \
       -d "$WORK/out.jar" || fail=1
     STDLIB="$(dirname "$(dirname "$KOTLINC")")/lib/kotlin-stdlib.jar"
-    "$JAVA" -Djava.library.path="$BIN/dist/host" \
+    "$JAVA" -Djava.library.path="$BIN/dist-host" \
       -cp "$WORK/out.jar:$STDLIB" com.seedmaps.SeedWorldGenHostTest || fail=1
   else
     fail=1
