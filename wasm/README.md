@@ -1,4 +1,4 @@
-# @seedmaps/engine-wasm
+# seedmaps-engine-wasm
 
 Cubiomes-generated Minecraft **Java Edition** engine compiled to WebAssembly:
 biome queries, rectangular biome dumps, structure positions/viability, spawn,
@@ -12,13 +12,13 @@ Web Workers. It locates `seed_engine.wasm` relative to its own
 ## Install
 
 ```bash
-npm install @seedmaps/engine-wasm
+npm install seedmaps-engine-wasm
 ```
 
 ## Use (raw module)
 
 ```js
-import createModule from "@seedmaps/engine-wasm";
+import createModule from "seedmaps-engine-wasm";
 
 const m = await createModule();
 // Seeds cross ABI as two uint32 halves: seed = (hi << 32) | lo

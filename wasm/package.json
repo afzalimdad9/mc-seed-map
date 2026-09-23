@@ -1,5 +1,5 @@
 {
-  "name": "@seedmaps/engine-wasm",
+  "name": "seedmaps-engine-wasm",
   "version": "0.1.0",
   "description": "Minecraft Java-generation engine compiled to WebAssembly: Cubiomes-driven biomes, structures, spawn and the seed_engine.wasm bindings (single default context + thread-safe handle API).",
   "type": "module",

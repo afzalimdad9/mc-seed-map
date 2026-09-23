@@ -61,7 +61,7 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
 - `build:aar` fixed (its `cd ../..` landed in `bindings/`, never the repo root)
   and wired into `npm test`; AAR jars are byte-deterministic so the committed
   artifact stays in sync.
-- `wasm/` published as `@seedmaps/engine-wasm` (files `dist` + `prepack`
+- `wasm/` published as `seedmaps-engine-wasm` (files `dist` + `prepack`
   rebuild; `npm pack` verified by installing the tarball in a scratch project);
   `test:wasm-pack` in the chain.
 - GitHub Actions CI: `core` job runs the full cross-platform suite on every
