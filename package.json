@@ -15,6 +15,7 @@
     "test:golden": "node scripts/test-golden.mjs",
     "build:android": "./bindings/android/build-android.sh",
     "test:android": "bindings/android/test-host.sh",
+    "test:swift": "bash bindings/swift/run.sh",
     "test:interface": "node scripts/test-interface.mjs",
     "test:browser": "node scripts/test-browser.mjs",
     "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:versions && npm run test:golden && npm run test:interface && npm run test:android",

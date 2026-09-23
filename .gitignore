@@ -5,4 +5,5 @@ wasm/dist/
 *.a
 *.so
 *.wasm.map
+.build/
 .DS_Store
