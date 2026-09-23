@@ -44,6 +44,81 @@ const view = {
 };
 const SCALES = [1, 4, 16]; // wheel zoom cycle (up to less detail on Ctrl+down)
 
+// ---- parallel rendering: biome bands computed in Web Workers ------------
+// Each worker runs its own WASM instance over a horizontal band of the map;
+// results are bit-for-bit identical to the single-threaded path. The pool is
+// reused across renders; a stale render whose epoch no longer matches simply
+// stops drawing (a newer generate() supersedes it).
+let renderPool = null;
+let renderEpoch = 0;
+const MAX_RENDER_WORKERS = 4;
+
+class RenderPool {
+  constructor(size) {
+    this.size = size;
+    this.workers = [];
+    this.next = 0;
+    this.pending = new Map();
+    for (let i = 0; i < size; i++) {
+      const w = new Worker(new URL("./render-worker.js", import.meta.url), { type: "module" });
+      w.onmessage = (e) => {
+        const { id, ok, cells, error } = e.data;
+        const p = this.pending.get(id);
+        if (!p) return;
+        this.pending.delete(id);
+        if (ok) p.resolve(Int32Array.from(cells));
+        else p.reject(new Error(error || "render worker failed"));
+      };
+      this.workers.push(w);
+    }
+  }
+
+  render(params) {
+    const id = ++renderEpochId;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.workers[this.next % this.size].postMessage({ id, ...params });
+      this.next++;
+    });
+  }
+
+  terminate() {
+    for (const w of this.workers) w.terminate();
+    this.workers = [];
+    this.pending.clear();
+  }
+}
+let renderEpochId = 0;
+
+function ensurePool(nWorkers) {
+  const supported = typeof Worker !== "undefined" && typeof URL !== "undefined";
+  if (!supported) return null;
+  if (renderPool && renderPool.size === nWorkers) return renderPool;
+  if (renderPool) renderPool.terminate();
+  renderPool = new RenderPool(nWorkers);
+  return renderPool;
+}
+
+function fillBand(img, counts, band, cells) {
+  const w = img.width;
+  const data = img.data;
+  for (let r = 0; r < band.rows; r++) {
+    const rowStart = (band.start + r) * w;
+    const src = r * w;
+    for (let col = 0; col < w; col++) {
+      const id = cells[col];
+      counts.set(id, (counts.get(id) || 0) + 1);
+      const color = id < 0 ? unknownColor() : palette.rgb(id);
+      const o = (rowStart + col) * 4;
+      data[o] = color[0];
+      data[o + 1] = color[1];
+      data[o + 2] = color[2];
+      data[o + 3] = 255;
+    }
+    cells = cells.subarray(w);
+  }
+}
+
 function parseSeed(text) {
   const t = text.trim();
   if (/^-?\d+$/.test(t)) return BigInt(t);
@@ -183,7 +258,7 @@ function drawOverlay(markers, box) {
   return { visible, viableCount };
 }
 
-function generate() {
+async function generate() {
   const seed = parseSeed(document.getElementById("seed").value);
   const version = selectedVersion();
   const scale = view.scale;
@@ -194,18 +269,11 @@ function generate() {
   const h = canvas.height;
   const y = scale === 1 ? 63 : 15; // vertical is 1:1 only at block scale
 
-  statusEl.textContent = `Generating ${w}×${h} @ scale ${scale} (dim ${dimension})…`;
+  const epoch = ++renderEpoch;
+  statusEl.textContent = `Rendering ${w}×${h} @ scale ${scale} (dim ${dimension})…`;
   const t0 = performance.now();
 
   engine.initialize({ version: version.enumValue, seed, dimension });
-  const cells = engine.generateBiomes({
-    x: view.originX,
-    z: view.originZ,
-    width: w,
-    height: h,
-    scale,
-    y,
-  });
 
   view.spawn = null;
   const box = {
@@ -221,24 +289,50 @@ function generate() {
     try { view.spawn = g.getSpawn(); } finally { g.destroy(); }
   }
   window.__seedmapSpawn = view.spawn;
+  window.__seedmapOverlay = [];
 
   const img = ctx.createImageData(w, h);
   const counts = new Map();
-  for (let i = 0; i < cells.length; i++) {
-    const id = cells[i];
-    counts.set(id, (counts.get(id) || 0) + 1);
-    const color = id < 0 ? unknownColor() : palette.rgb(id);
-    const o = i * 4;
-    img.data[o] = color[0];
-    img.data[o + 1] = color[1];
-    img.data[o + 2] = color[2];
-    img.data[o + 3] = 255;
+
+  // Split the height into horizontal bands, one per worker.
+  const nBands = Math.min(MAX_RENDER_WORKERS, h);
+  const pool = ensurePool(nBands);
+  const bands = [];
+  for (let i = 0; i < nBands; i++) {
+    const start = Math.floor((h * i) / nBands);
+    const end = Math.floor((h * (i + 1)) / nBands);
+    if (end > start) bands.push({ start, rows: end - start });
   }
-  ctx.putImageData(img, 0, 0);
+
+  const renderBand = (band) => {
+    const params = {
+      version: version.enumValue,
+      dimension,
+      seed,
+      x: view.originX,
+      z: view.originZ + band.start,
+      width: w,
+      height: band.rows,
+      scale,
+      y,
+    };
+    return pool ? pool.render(params) : engine.generateBiomes(params);
+  };
+
+  await Promise.all(bands.map(async (band) => {
+    let cells = await renderBand(band);
+    if (epoch !== renderEpoch) return; // superseded by a newer generate()
+    fillBand(img, counts, band, cells);
+    ctx.putImageData(img, 0, 0);
+    statusEl.textContent = `Rendered ${band.start + band.rows}/${h} rows…`;
+  }));
+
+  if (epoch !== renderEpoch) return;
 
   // Structure overlay (overworld only — region generation is overworld-only).
   let overlayNote = "";
-  window.__seedmapOverlay = [];
+  lastMarkers = [];
+  overlayVisible = 0;
   if (dimension === 0) {
     const types = selectedOverlayTypes();
     if (types.length) {
@@ -246,14 +340,18 @@ function generate() {
       const { visible, viableCount } = drawOverlay(markers, box);
       overlayNote = ` · ${visible} struct${visible === 1 ? "" : "s"} (${viableCount} viable)`;
     }
-  } else {
-    lastMarkers = [];
-    overlayVisible = 0;
   }
+  window.__seedmapOverlay = lastMarkers;
 
   const ms = Math.round(performance.now() - t0);
   statusEl.textContent = `Done in ${ms} ms · seed ${seed} · ${version.label}${overlayNote}`;
   renderLegend(counts);
+}
+
+function safeGenerate() {
+  generate().catch((err) => {
+    statusEl.textContent = `Error: ${String((err && err.message) || err)}`;
+  });
 }
 
 canvas.addEventListener("mousemove", (e) => {
@@ -318,7 +416,7 @@ window.addEventListener("mouseup", () => {
   if (dx === 0 && dy === 0) return;
   view.originX = Math.round(drag.originX - dx);
   view.originZ = Math.round(drag.originZ - dy);
-  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+  safeGenerate();
 });
 
 // Wheel: zoom to the cursor, keeping the block under it stationary.
@@ -337,15 +435,15 @@ canvas.addEventListener("wheel", (e) => {
   document.getElementById("scale").value = String(next);
   view.originX = Math.round(blockX / next - px);
   view.originZ = Math.round(blockZ / next - pz);
-  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+  safeGenerate();
 }, { passive: false });
 
 document.getElementById("generate").addEventListener("click", () => {
-  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+  safeGenerate();
 });
 
 overlayToggles.addEventListener("change", () => {
-  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+  safeGenerate();
 });
 
 document.getElementById("scale").addEventListener("change", () => {
@@ -353,7 +451,7 @@ document.getElementById("scale").addEventListener("change", () => {
   if (!SCALES.includes(v)) return;
   view.scale = v;
   view.blockPerCell = v;
-  try { generate(); } catch (err) { statusEl.textContent = String(err.message || err); }
+  safeGenerate();
 });
 
 document.getElementById("findStructures").addEventListener("click", () => {
@@ -384,4 +482,4 @@ document.getElementById("findStructures").addEventListener("click", () => {
 });
 
 buildOverlayToggles();
-generate();
+safeGenerate();
