@@ -105,10 +105,17 @@ jobs:
         run: |
           bash bindings/apple/xcframework.sh
           FRM=bindings/apple/seed_engine.xcframework
-          mapfile -t LIBS < <(find "$FRM" -name '*.a')
-          echo "slices: ${#LIBS[@]}"
-          for a in "${LIBS[@]}"; do xcrun lipo -info "$a"; done
-          test "${#LIBS[@]}" -eq 5
+          LIBS=( $(find "$FRM" -name '*.a') )
+          echo "platform libs: ${#LIBS[@]}"
+          total=0
+          for a in "${LIBS[@]}"; do
+            archs="$(xcrun lipo -archs "$a")"
+            echo "  ${a#$FRM/}: $archs"
+            total=$((total + $(echo $archs | wc -w)))
+          done
+          echo "arch slices: $total"
+          test "${#LIBS[@]}" -eq 3
+          test "$total" -eq 5
           ls "$FRM"
 
       - name: Upload XCFramework artifact

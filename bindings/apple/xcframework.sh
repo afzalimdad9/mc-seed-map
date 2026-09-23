@@ -2,10 +2,11 @@
 # Build the shared seed engine as an Apple XCFramework.
 #
 # Runs locally on macOS AND in CI: the workflow's "macos" job executes this,
-# lipo-checks the five slices and uploads the framework as an artifact.
-# Output contains one static library per (sdk, arch) speaking the same
-# seed_engine.h ABI, so the Swift/C#/Kotlin-style facades above it work
-# unchanged.
+# lipo-checks the framework and uploads it as an artifact. Per-arch static
+# libs are lipo-merged into one fat library per platform (3 libs: device,
+# simulator, macOS — the canonical -create-xcframework input shape) speaking
+# the same seed_engine.h ABI, so the Swift/C#/Kotlin-style facades above it
+# work unchanged.
 #
 #     bash bindings/apple/xcframework.sh
 #     ls bindings/apple/seed_engine.xcframework
@@ -43,7 +44,8 @@ TARGETS=(
 
 LIB_DIR="$BUILD/libs"
 mkdir -p "$LIB_DIR"
-LIBS=()
+SDKS=()
+SDKS_SEEN=" "
 
 for entry in "${TARGETS[@]}"; do
   sdk="${entry%%:*}"; rest="${entry#*:}"
@@ -58,10 +60,26 @@ for entry in "${TARGETS[@]}"; do
       -c "$src" -o "$obj/$(basename "$src" .c).o"
   done
   xcrun ar rcs "$lib" "$obj"/*.o
-  LIBS+=( "$lib" )
+  if [[ "$SDKS_SEEN" != *" $sdk "* ]]; then
+    SDKS+=( "$sdk" )
+    SDKS_SEEN="$SDKS_SEEN$sdk "
+  fi
+done
+
+FAT=()
+for sdk in "${SDKS[@]}"; do
+  parts=()
+  for entry in "${TARGETS[@]}"; do
+    [[ "${entry%%:*}" == "$sdk" ]] || continue
+    arch="${entry#*:}"; arch="${arch%%:*}"
+    parts+=( "$LIB_DIR/lib${NAME}-${sdk}-${arch}.a" )
+  done
+  fat="$LIB_DIR/lib${NAME}-${sdk}.a"
+  xcrun lipo -create "${parts[@]}" -output "$fat"
+  FAT+=( "$fat" )
 done
 
 args=()
-for lib in "${LIBS[@]}"; do args+=( -library "$lib" ); done
+for lib in "${FAT[@]}"; do args+=( -library "$lib" ); done
 xcodebuild -quiet -create-xcframework "${args[@]}" -output "$FRAMEWORK"
 echo "created $FRAMEWORK"
