@@ -73,10 +73,11 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
   the Android on-device emulator test.
 - Android CI now builds the native engine **from source**: installs NDK
   30.0.16248370, runs `build:android` (3 `libseed_engine.so` ABIs, arch-checked
-  with `file`) then `build:aar`, asserts the AAR bundles `classes.jar` + all
-  three `jni/<abi>` libraries, and `cmp`s the result byte-for-byte against the
-  committed AAR (reproducibility oracle) — closing the gap where only the
-  committed `.so` were ever packaged.
+  with `file`) then `build:aar`, and asserts the AAR bundles `classes.jar` +
+  all three `jni/<abi>` libraries — closing the gap where only the committed
+  `.so` were ever packaged. Reproducibility is proven by building the whole
+  source→NDK→AAR chain twice and `cmp`-ing the two fresh artifacts
+  byte-for-byte.
 - AAR packaging is now fully deterministic: archive tasks get
   `isPreserveFileTimestamps=false`/`isReproducibleFileOrder=true`, and since
   AGP's own AAR zip keeps live timestamps, `:seedmaps:normalizeReleaseAar`

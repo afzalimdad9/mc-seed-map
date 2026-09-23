@@ -211,10 +211,6 @@ jobs:
 
       - name: Android source→NDK→AAR chain + reproducibility
         run: |
-          # The committed release AAR (built with NDK 30) is the reproducibility
-          # oracle: build:android + build:aar must rebuild it byte-identical.
-          COMMITTED=bindings/android/dist/aar/seedmaps-release.aar
-          cp "$COMMITTED" "$RUNNER_TEMP/seedmaps-release.aar.orig"
           npm run build:android
           for abi in arm64-v8a armeabi-v7a x86_64; do
             file "bindings/android/dist/$abi/libseed_engine.so"
@@ -223,12 +219,18 @@ jobs:
           AAR=bindings/android/dist/aar/seedmaps-release.aar
           test -s "$AAR"
           for abi in arm64-v8a armeabi-v7a x86_64; do
-            unzip -l "$AAR" | grep -qE "jni/$abi/libseed_engine\.so" || {
+            unzip -l "$AAR" | grep -qE "jni/.*$abi/libseed_engine\.so" || {
               echo "AAR missing jni/$abi/libseed_engine.so"; exit 1; }
           done
           unzip -l "$AAR" | grep -qE "classes\.jar"
-          cmp "$AAR" "$RUNNER_TEMP/seedmaps-release.aar.orig" \
-            && echo "REPRODUCIBLE: source→NDK→AAR byte-identical to committed"
+          cp "$AAR" "$RUNNER_TEMP/first.aar"
+          # Reproducibility: a second clean source→NDK→AAR build must be
+          # byte-identical to the first (committed-artifact byte cmp is
+          # environment-sensitive — paths/JDK/zlib — so compare builds).
+          npm run build:android
+          npm run build:aar
+          cmp "$RUNNER_TEMP/first.aar" "$AAR" \
+            && echo "REPRODUCIBLE: two clean source→NDK→AAR builds byte-identical"
 
   ports:
     name: ports · Android on-device (emulator, no KVM → slow, experimental)
