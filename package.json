@@ -9,6 +9,7 @@
     "test:native": "./build/native/native_smoke",
     "build:wasm": "node scripts/build-wasm.mjs",
     "test:wasm": "node scripts/test-wasm.mjs",
+    "test:wasm-pack": "npm pack ./wasm --dry-run",
     "test:finder": "node scripts/test-finder.mjs",
     "test:structures": "node scripts/test-structures.mjs",
     "test:versions": "node scripts/test-versions.mjs",
@@ -24,7 +25,7 @@
     "test:python": "bash bindings/python/run.sh",
     "test:interface": "node scripts/test-interface.mjs",
     "test:browser": "node scripts/test-browser.mjs",
-    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:structures && npm run test:versions && npm run test:golden && npm run test:golden-regen && npm run test:browser && npm run test:interface && npm run test:android && npm run test:android-device && npm run test:swift && npm run test:csharp && npm run test:python",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:wasm-pack && npm run test:finder && npm run test:structures && npm run test:versions && npm run test:golden && npm run test:golden-regen && npm run test:browser && npm run test:interface && npm run test:android && npm run test:android-device && npm run build:aar && npm run test:swift && npm run test:csharp && npm run test:python",
     "cli": "node apps/cli/src/index.js",
     "dev": "python3 -m http.server 8080"
   },

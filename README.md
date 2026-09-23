@@ -54,6 +54,12 @@ markers into the PPM and reports them as JSON; use `--no-structures` to skip.
 npm run test:python
 ```
 
+`wasm/` is a publishable npm package (`@seedmaps/engine-wasm`) exposing the
+raw WASM engine; `npm pack` from that directory produces the tarball.
+GitHub Actions CI (`.github/workflows/ci.yml`) runs the full core suite on
+every push; a `workflow_dispatch` "ports" job covers the Swift CLI and the
+Android SDK/AAR builds that need an Apple/Android host.
+
 ## Validated reference
 
 | Check | Expected | Result |

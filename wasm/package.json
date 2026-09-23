@@ -1,0 +1,32 @@
+{
+  "name": "@seedmaps/engine-wasm",
+  "version": "0.1.0",
+  "description": "Minecraft Java-generation engine compiled to WebAssembly: Cubiomes-driven biomes, structures, spawn and the seed_engine.wasm bindings (single default context + thread-safe handle API).",
+  "type": "module",
+  "main": "./dist/seed_engine.js",
+  "exports": {
+    ".": "./dist/seed_engine.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "cd .. && node scripts/build-wasm.mjs",
+    "prepack": "cd .. && node scripts/build-wasm.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "minecraft",
+    "seed-map",
+    "seed-finder",
+    "cubiomes",
+    "biomes",
+    "webassembly",
+    "wasm",
+    "structures"
+  ],
+  "license": "MIT"
+}

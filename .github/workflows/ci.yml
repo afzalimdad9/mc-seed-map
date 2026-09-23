@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  core:
+    name: Core test chain (native · wasm · web · CLI · bindings)
+    runs-on: ubuntu-latest
+    env:
+      EMCC: /opt/emsdk/upstream/emscripten/emcc
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Emscripten SDK (pinned)
+        run: |
+          git clone --depth 1 --branch 3.1.74 https://github.com/emscripten-core/emsdk.git /opt/emsdk
+          /opt/emsdk/emsdk install 3.1.74
+          /opt/emsdk/emsdk activate 3.1.74
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Kotlin compiler (host JNI test)
+        run: |
+          curl -fsSL -o /tmp/kotlin.zip https://github.com/JetBrains/kotlin/releases/download/v2.1.20/kotlin-compiler-2.1.20.zip
+          unzip -q -o -d "$HOME/.local/share" /tmp/kotlin.zip
+          echo "KOTLINC=$HOME/.local/share/kotlinc/bin/kotlinc" >> "$GITHUB_ENV"
+
+      - name: Install Playwright Chromium
+        run: npm ci && npx playwright install --with-deps chromium
+
+      - name: Full core suite
+        run: |
+          set -euo pipefail
+          npm run build:native && npm run test:native
+          npm run build:wasm && npm run test:wasm && npm run test:wasm-pack
+          npm run test:finder && npm run test:structures && npm run test:versions
+          npm run test:golden && npm run test:golden-regen
+          npm run test:browser && npm run test:interface
+          npm run test:android
+          npm run test:csharp && npm run test:python
+        # test:android-device (emulator/KVM), build:aar (Android SDK) and
+        # test:swift (Swift toolchain) run in the "ports" job below or
+        # locally via `npm test`; this keeps default CI lean and green.
+
+  ports:
+    name: Ports (Swift CLI · Android SDK/AAR · on-device)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      EMCC: /opt/emsdk/upstream/emscripten/emcc
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Install Emscripten SDK (pinned) — for build:wasm
+        run: |
+          git clone --depth 1 --branch 3.1.74 https://github.com/emscripten-core/emsdk.git /opt/emsdk
+          /opt/emsdk/emsdk install 3.1.74
+          /opt/emsdk/emsdk activate 3.1.74
+
+      - name: Build native + wasm (needed by bindings)
+        run: npm run build:native && npm run build:wasm
+
+      - name: Install Swift toolchain (Ubuntu 24.04 tarball)
+        run: |
+          curl -fsSL -o /tmp/swift.tar.gz \
+            https://download.swift.org/swift-6.3.3-release/ubuntu2404/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE-ubuntu24.04.tar.gz
+          sudo mkdir -p /opt/swift && sudo tar xzf /tmp/swift.tar.gz -C /opt/swift --strip-components=1
+          echo "/opt/swift/usr/bin" >> "$GITHUB_PATH"
+
+      - name: Swift CLI sample
+        run: bash bindings/swift/run.sh
+
+      - name: Install Android SDK (cmdline-tools + API 37 + build-tools)
+        run: |
+          sudo mkdir -p "$ANDROID_HOME"
+          curl -fsSL -o /tmp/cmdline.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          sudo unzip -q -o -d "$ANDROID_HOME/cmdline-tools" /tmp/cmdline.zip
+          sudo mv -f "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+          yes | sudo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          sudo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platforms;android-37.0" "build-tools;36.0.0" platform-tools >/dev/null
+          sudo ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
+
+      - name: Android AAR build
+        run: npm run build:aar
+
+      - name: Android on-device test (skips when no /dev/kvm)
+        run: npm run test:android-device

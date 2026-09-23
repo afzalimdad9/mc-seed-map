@@ -16,63 +16,67 @@ Only thin FFI/bindings layers are platform-specific.
            │           │           │           │              │
            ▼           ▼           ▼           ▼              ▼
          CLI/Node    Web/JS      Linux C    iOS/macOS      Android
-         (Node N-API  (ES module)  apps      (Swift)        (Kotlin)
-          or WASM)
+         (Node)      (ES module)  apps      (Swift)        (Kotlin/JNI)
 ```
 
-## Targets
+## Targets — actual status (M6)
 
-| Target | Language UI | Engine linkage | Status |
+| Target | UI language | Engine linkage | Status |
 |---|---|---|---|
 | Web | HTML/CSS/JS | WASM (`wasm/dist/seed_engine.js`) | **Working (M1)** |
 | CLI | Node.js | WASM via Node | **Working (M1)** |
 | Linux native | C | `libseed_engine.a` | **Working (M1)** |
-| Android | Kotlin | JNI → `libseed_engine.so` (NDK) | Planned (M2) |
-| iOS / macOS | Swift | SwiftPM / XCFramework | Planned (M2) |
-| Windows | C# / C++ | P/Invoke → `seed_engine.dll` | Planned (M2) |
-| Bedrock engine | (shared UIs) | Separate adapter | Research |
+| Android | Kotlin | JNI → `libseed_engine.so` (NDK, 3 ABIs) | **Working (M4)** — host JVM suite + on-device emulator PASS; release AAR in `bindings/android/dist/aar/` |
+| iOS / macOS | Swift | SwiftPM CLI | **Working (M4)** — CLI runs on Linux; XCFramework build still needs an Apple SDK host |
+| Windows / .NET | C# | P/Invoke → `seed_engine.dll` | **Working (M4)** — `C# SAMPLE PASSED` on .NET 8 (Linux) |
+| Python | Python | ctypes → `libseed_engine.so` | **Working (M6)** — `PYTHON SAMPLE PASSED` |
+| **Bedrock** engine | (shared UIs) | Separate adapter | **No public bedrock library exists** — verified eval + roadmap in `docs/bedrock.md` |
 
 ## ABI rules
 
 1. Never change `seed_engine.h` signatures without a version bump.
-2. 64-bit seeds cross FFI as two `uint32` halves or as a hex string —
-   never as a double/float.
+2. Seeds cross FFI as `uint64` on unmanaged ABI (C# / Python / Swift / JNI);
+   JS/WASM still passes them split as two `uint32` halves (the JS facade
+   reassembles `(hi<<32)|lo`). Never as a double/float.
 3. Returned `const char *` pointers are static; do not free.
-4. All functions are re-entrant **except** the single global generator
-   context; one init→query cycle per thread/process until we add
-   `seed_engine_create()`/`seed_engine_destroy()` handles (planned M2).
+4. `seed_engine_init()` is a single shared default context; use the handle
+   API (`seed_engine_create/destroy/set_seed/get_*_ctx`) for concurrency —
+   each worker/thread gets an independent `Generator`.
 
-## JNI / Swift / P/Invoke sketch (M2)
+## What every binding wraps (seed_engine.h)
 
 ```c
-// Shared: every platform only wraps these
+// versions — read enum values from the engine, never hardcode in JS
+int  seed_engine_version_from_string(const char *label);
+int  seed_engine_version_1_18(void);
+
+// default (single) context
 int  seed_engine_init(int mc, int dim, uint64_t seed);
 int  seed_engine_get_biome(int scale, int x, int y, int z);
 int  seed_engine_generate_biomes(int x, int z, int w, int h, int scale, int y, int *out);
+
+// handle-based, thread-safe API
+SeedEngineCtx *seed_engine_create(int mc, int dim, uint64_t seed);
+int  seed_engine_generate_biomes_ctx(SeedEngineCtx*, int x, int z, int w, int h, int scale, int y, int *out);
+int  seed_engine_get_spawn_ctx(SeedEngineCtx*, int *out_x, int *out_z);
 ```
 
-```kotlin
-// Android (planned)
-external fun init(mc: Int, dim: Int, seedLo: Long, seedHi: Long): Int
-```
+Landing bindings: `bindings/{android,swift,csharp,python}`, each with its own
+`run.sh` wired into `npm test` and reproducing the same known answers
+(M4/M6).
 
-```swift
-// iOS (planned)
-func seedEngineGetBiome(scale: Int32, x: Int32, y: Int32, z: Int32) -> Int32
-```
-
-```csharp
-// Windows (planned)
-[DllImport("seed_engine")] static extern int seed_engine_get_biome(...);
-```
-
-## Building the shared library
+## Building the shared libraries
 
 ```bash
 cmake -S . -B build/native
 cmake --build build/native
 # artifacts: build/native/libseed_engine.a, build/native/libcubiomes.a
-```
 
-Android/iOS/Windows toolchains consume the same `engine/src` + `vendor/cubiomes`
-sources via their own CMake/Gradle/Xcode projects (to be added under `sdk/`).
+# plain unmanaged .so (C# / Python)
+bash bindings/csharp/run.sh   # builds bindings/csharp/lib/libseed_engine.so
+bash bindings/python/run.sh   # builds bindings/python/lib/libseed_engine.so
+
+# Android per-ABI .so + AAR
+./bindings/android/build-android.sh        # dist/{arm64-v8a,armeabi-v7a,x86_64}/
+npm run build:aar                          # bindings/android/dist/aar/seedmaps-release.aar
+```
