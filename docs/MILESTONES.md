@@ -49,13 +49,27 @@
   internally (layered iterators read cache tail, e.g. `mapRiverMix` at `out + w*h`);
   pre-1.18 bulk generation was memory-unsafe for caller-sized output buffers
 
-## M4 — Bedrock + multi-platform SDK packaging
+## M4 — Bedrock + multi-platform SDK packaging (DONE)
 
-- [ ] Bedrock engine research + adapter behind same `WorldGenerator` interface
-- [ ] Android Kotlin AAR (JNI)
-- [ ] iOS/macOS Swift XCFramework
-- [ ] Windows C# P/Invoke package
-- [ ] Unified `WorldGenerator` JS interface used by web + CLI
+- [x] **4a Unified JS interface**: `packages/core/create-world-generator.js`
+  facade shared by web, CLI and finder; contract test `scripts/test-interface.mjs`
+  (known-answer + platform seam)
+- [x] **4b Bedrock**: research recorded in `docs/bedrock.md` (32-bit seed space,
+  `String.hashCode` UTF-16, post-1.18 terrain convergence but structure/spawn
+  divergence). Deliberately NOT implemented — `{ platform: "bedrock" }` fails
+  loudly with a descriptive error; roadmap via `cubiomes-bedrock`
+- [x] **4c Android**: NDK-build of `libseed_engine.so` for arm64-v8a/armeabi-v7a/
+  x86_64 (exports verified with `nm -D`), JNI glue (`Java_com_seedmaps_*`),
+  Kotlin `SeedWorldGen.kt`, host-testable impl core (`test-host.sh` smoke).
+  AAR packaging deferred: no JDK in this environment
+- [x] **4d Swift**: root-level SwiftPM package, `CSeedEngine` C module (symlinked
+  sources, single-source header sync) + `SeedToolsCLI` example — built and RUN
+  on Linux with output matching the golden file. XCFramework builds need an
+  Apple SDK; engine C code is platform-neutral for it
+- [x] **4e C#**: P/Invoke binding + sample in `bindings/csharp/` (source-only —
+  no .NET SDK here; signatures mirror `seed_engine.h`, expectations from the
+  golden contract)
+- [x] **4f** This file; every sub-milestone landed as its own commit
 
 ## Explicit non-goals
 

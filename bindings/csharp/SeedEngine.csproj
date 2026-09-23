@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>SeedMaps.SeedEngine</AssemblyName>
+    <RootNamespace>SeedMaps</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Uses a static sample via `dotnet run` (Program.cs not yet added). -->
+    <Compile Remove="Sample.cs" Condition="Exists('Sample.cs')" />
+  </ItemGroup>
+</Project>
