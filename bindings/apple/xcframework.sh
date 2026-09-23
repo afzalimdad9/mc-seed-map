@@ -28,7 +28,7 @@ command -v xcrun >/dev/null && command -v xcodebuild >/dev/null || {
 
 # Same source manifest as the CMake build: the shared engine + Cubiomes.
 C_SRCS=( "$ROOT/engine/src/seed_engine.c" )
-for f in finders generators layer biomenoise biomes noise util; do
+for f in finders generator layers biomenoise biomes noise util; do
   C_SRCS+=( "$ROOT/vendor/cubiomes/$f.c" )
 done
 [[ -f "$ROOT/vendor/cubiomes/quadbase.c" ]] && C_SRCS+=( "$ROOT/vendor/cubiomes/quadbase.c" )
