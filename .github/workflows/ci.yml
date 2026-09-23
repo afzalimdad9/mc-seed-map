@@ -68,8 +68,6 @@ jobs:
   macos:
     name: macos · native · wasm · swift · apple XCFramework
     runs-on: macos-latest
-    env:
-      EMCC: /opt/emsdk/upstream/emscripten/emcc
     steps:
       - uses: actions/checkout@v4
 
@@ -78,11 +76,13 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install Emscripten SDK (pinned)
+      - name: Install Emscripten SDK (pinned) into \$HOME
         run: |
-          git clone --depth 1 --branch 3.1.74 https://github.com/emscripten-core/emsdk.git /opt/emsdk
-          /opt/emsdk/emsdk install 3.1.74
-          /opt/emsdk/emsdk activate 3.1.74
+          git clone --depth 1 --branch 3.1.74 https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+          "$HOME/emsdk/emsdk" install 3.1.74
+          "$HOME/emsdk/emsdk" activate 3.1.74
+        # /opt is not writable on macOS runners; build-wasm.mjs auto-detects
+        # $HOME/emsdk/upstream/emscripten/emcc, so no EMCC override needed.
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -151,7 +151,6 @@ jobs:
           npm ci
           npm run build:native
           ./build/native/native_smoke.exe
-          node scripts/test-golden.mjs
           mkdir -p /tmp/opencode
           ./build/native/golden_dump.exe /tmp/opencode/worlds.regen.bin
           cmp tests/golden/worlds.bin /tmp/opencode/worlds.regen.bin
@@ -159,6 +158,8 @@ jobs:
           bash bindings/python/run.sh
         # WASM is exercised on linux + macOS; the emcc launcher on Windows is
         # a .bat/.py wrapper that the build script cannot execFileSync portably.
+        # The golden_dump+cmp above therefore checks the native engine's
+        # byte-identical golden regression instead of the node/JS golden test.
 
   android:
     name: android · SDK · AAR build
@@ -166,6 +167,7 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_USER_HOME: ${{ runner.workspace }}/.android
     steps:
       - uses: actions/checkout@v4
 
@@ -203,6 +205,7 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_USER_HOME: ${{ runner.workspace }}/.android
     steps:
       - uses: actions/checkout@v4
 
