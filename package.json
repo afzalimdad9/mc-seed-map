@@ -18,7 +18,7 @@
     "test:swift": "bash bindings/swift/run.sh",
     "test:interface": "node scripts/test-interface.mjs",
     "test:browser": "node scripts/test-browser.mjs",
-    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:versions && npm run test:golden && npm run test:interface && npm run test:android && npm run test:swift",
+    "test": "npm run build:native && npm run test:native && npm run build:wasm && npm run test:wasm && npm run test:finder && npm run test:versions && npm run test:golden && npm run test:browser && npm run test:interface && npm run test:android && npm run test:swift",
     "cli": "node apps/cli/src/index.js",
     "dev": "python3 -m http.server 8080"
   },
