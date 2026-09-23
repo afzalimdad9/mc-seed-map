@@ -12,6 +12,11 @@ Native bridge exposing the seed map C engine to Android via JNI.
   `libseed_engine.so` under `jniLibs`).
 - `tests/impl_smoke.c` + `test-host.sh` — host test for the impl layer.
 - `build-android.sh` — NDK cross-build to `dist/<abi>/libseed_engine.so`.
+- `build-host.sh` + `kotlin/SeedWorldGenHostTest.kt` — build a host (x86_64)
+  shared lib that includes the **real JNI glue**, then load it from a host JVM
+  through the real Kotlin facade. Requires a JDK (`$JAVA_HOME`, default
+  `~/.local/share/jdk`) and `kotlinc` (`$KOTLINC`, default
+  `~/.local/share/kotlinc/kotlinc/bin/kotlinc`).
 
 ## Build
 
@@ -21,8 +26,9 @@ npm run build:native && bindings/android/test-host.sh
 ```
 
 Produces `bindings/android/dist/{arm64-v8a,armeabi-v7a,x86_64}/libseed_engine.so`
-(jniLibs layout). Verified: every ABI is the correct ELF class/machine and
-exports all 8 `Java_com_seedmaps_NativeEngine_*` symbols.
+(jniLibs layout) plus `dist/host/libseed_engine.so` for the host-JVM test.
+Verified: every ABI is the correct ELF class/machine and exports all 8
+`Java_com_seedmaps_NativeEngine_*` symbols.
 
 ## Seed ABI
 
@@ -34,6 +40,8 @@ here equals a seed reproduced in the web app or CLI.
 ## Status
 
 - Native `.so` for 3 ABIs: built + exported-symbol verified.
-- Impl layer correctness: host-tested (`seed 262 → mushroom_fields(14)` anchor).
-- JNI/Kotlin runtime path: **not executed here** (no JVM/JDK in this
-  environment). Wiring class/method names must match `com.seedmaps.NativeEngine`.
+- Impl layer correctness: host-tested.
+- JNI/Kotlin runtime path: **host-JVM tested** — `test-host.sh` loads the JNI
+  glue via `System.loadLibrary` and gets green known-answers through the real
+  Kotlin facade (`ANDROID KOTLIN + JNI TEST PASSED`). NDK `.so`s for an actual
+  Android device still require a device/emulator to run.

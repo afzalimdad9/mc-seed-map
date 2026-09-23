@@ -60,8 +60,13 @@
   loudly with a descriptive error; roadmap via `cubiomes-bedrock`
 - [x] **4c Android**: NDK-build of `libseed_engine.so` for arm64-v8a/armeabi-v7a/
   x86_64 (exports verified with `nm -D`), JNI glue (`Java_com_seedmaps_*`),
-  Kotlin `SeedWorldGen.kt`, host-testable impl core (`test-host.sh` smoke).
-  AAR packaging deferred: no JDK in this environment
+  Kotlin `SeedWorldGen.kt`, host-testable impl core (`test-host.sh` smoke),
+  and a host JVM run of the REAL glue + Kotlin facade (JDK + Kotlin installed
+  in the environment). AAR packaging deferred: no Android device/emulator here
+- [x] **4c+ host-JVM JNI test**: `test-host.sh` builds `dist/host/libseed_engine.so`
+  with the actual `Java_com_seedmaps_NativeEngine_*` exports, compiles
+  `SeedWorldGen.kt` + `SeedWorldGenHostTest.kt` with kotlinc and runs the
+  known-answer green on the JVM
 - [x] **4d Swift**: root-level SwiftPM package, `CSeedEngine` C module (symlinked
   sources, single-source header sync) + `SeedToolsCLI` example — built and RUN
   on Linux with output matching the golden file. XCFramework builds need an
