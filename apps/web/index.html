@@ -48,6 +48,13 @@
       <h2>Structure overlay</h2>
       <div id="overlayToggles" class="ovl-box"></div>
       <ul id="structLegend" class="struct-legend"></ul>
+      <h2>Landmark finder</h2>
+      <div class="ovl-box" id="finderRow">
+        <select id="findType"></select>
+        <input id="findRadius" type="number" value="4000" size="5" title="search radius in blocks" />
+        <button id="findNearest">Finding nearest to spawn…</button>
+      </div>
+      <div id="landmarkResult" class="lm-result">—</div>
       <h2>Structures (near origin)</h2>
       <button id="findStructures">Find villages in ±8 regions</button>
       <ul id="structures"></ul>

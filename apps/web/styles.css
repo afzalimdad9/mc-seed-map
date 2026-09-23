@@ -120,3 +120,9 @@ aside li { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-si
   border: 1px solid #fff;
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
 }
+
+#finderRow select { padding: 5px 6px; font-size: 0.85rem; }
+#finderRow input { width: 72px; }
+#finderRow button { padding: 5px 10px; font-size: 0.85rem; }
+.lm-result { font-size: 0.8rem; color: #ffd54f; min-height: 1.2em; margin: 4px 0 8px; }
+.open-in-map { color: #9cf; margin-left: 10px; font-size: 0.8rem; }

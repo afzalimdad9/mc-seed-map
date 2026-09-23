@@ -168,6 +168,31 @@ try {
   );
   console.log("BROWSER PAN OK");
 
+  // M6b landmark finder: nearest viable village to seed 262's spawn (420,-92)
+  // within 4000 blocks is (-800,-240), 1229 blocks away (frozen known-answer).
+  await page.selectOption("#findType", "village");
+  await page.fill("#findRadius", "4000");
+  await page.click("#findNearest");
+  await page.waitForFunction(() => window.__seedmapNearest, { timeout: 30000 });
+  const nearest = await page.evaluate(() => window.__seedmapNearest);
+  const finderOk =
+    nearest && nearest.type === "village" && nearest.x === -800 && nearest.z === -240 &&
+    nearest.viable === true && nearest.dist === 1229;
+  const lmText = await page.textContent("#landmarkResult");
+  const lmOk = finderOk && lmText.includes("village at (-800, -240)") && lmText.includes("1229 blocks");
+  console.log(lmOk ? "BROWSER FINDER NEAREST OK" : "BROWSER FINDER NEAREST FAIL");
+  if (!lmOk) console.log("LM>", JSON.stringify({ nearest, lmText }));
+
+  // M6b seed→map deep link: finder results link to index.html#seed=<signed>.
+  await page.goto("about:blank").catch(() => {});
+  await page.goto(`${BASE}/apps/web/index.html#seed=635`);
+  await page.waitForFunction(() => document.getElementById("status").textContent.includes("Done"), { timeout: 30000 });
+  const deepSeed = await page.inputValue("#seed");
+  const deepStatus = await page.textContent("#status");
+  const deepOk = deepSeed === "635" && deepStatus.includes("seed 635");
+  console.log(deepOk ? "BROWSER DEEPLINK OK" : "BROWSER DEEPLINK FAIL");
+  if (!deepOk) console.log("DEEP>", JSON.stringify({ deepSeed, deepStatus }));
+
   // Nether dimension must also generate and render.
   await page.selectOption("#dimension", "nether");
   await page.click("#generate");
@@ -181,7 +206,7 @@ try {
   });
   console.log(netherOk ? "BROWSER NETHER MAP OK" : "BROWSER NETHER MAP FAIL");
 
-  process.exitCode = ok && mapOk && netherOk && overlayOk && toggleOk && spawnOk && hoverOk && zoomOk && zoomOutOk ? 0 : 1;
+  process.exitCode = ok && mapOk && netherOk && overlayOk && toggleOk && spawnOk && hoverOk && zoomOk && zoomOutOk && finderOk && deepOk ? 0 : 1;
 } catch (e) {
   console.log("BROWSER TEST ERROR:", e.message);
   for (const l of logs) console.log("LOG>", l);

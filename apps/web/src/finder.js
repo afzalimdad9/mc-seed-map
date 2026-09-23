@@ -126,8 +126,15 @@ function renderResults() {
   for (const [i, rr] of results.slice(0, count).entries()) {
     const li = document.createElement("li");
     const { seed, signed } = fmt(rr.seed);
-    li.textContent = `#${i + 1}  seed ${signed} (${seed})` +
-      (rr.dist != null ? `  · structure ${Math.round(rr.dist)} blocks` : "");
+    const a = document.createElement("a");
+    a.href = `./index.html#seed=${signed}`;
+    a.textContent = "map";
+    a.className = "open-in-map";
+    li.append(
+      document.createTextNode(`#${i + 1}  seed ${signed} (${seed})` +
+        (rr.dist != null ? `  · structure ${Math.round(rr.dist)} blocks` : "")),
+      a,
+    );
     resultsEl.appendChild(li);
   }
   if (!results.length) resultsEl.innerHTML = "<li>No matches yet…</li>";

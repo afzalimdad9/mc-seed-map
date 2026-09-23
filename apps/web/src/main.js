@@ -11,6 +11,9 @@ const structuresEl = document.getElementById("structures");
 const structLegendEl = document.getElementById("structLegend");
 const hoverEl = document.getElementById("hover");
 const overlayToggles = document.getElementById("overlayToggles");
+const findTypeEl = document.getElementById("findType");
+const findRadiusEl = document.getElementById("findRadius");
+const landmarkResultEl = document.getElementById("landmarkResult");
 
 const { engine, registry, palette } = await (async () => {
   const e = await createWorldGenerator();
@@ -162,6 +165,13 @@ function buildOverlayToggles() {
     label.append(input, document.createTextNode(spec.name));
     overlayToggles.appendChild(label);
   }
+  findTypeEl.replaceChildren();
+  for (const spec of LANDMARK_TYPES) {
+    const opt = document.createElement("option");
+    opt.value = spec.name;
+    opt.textContent = spec.name;
+    findTypeEl.appendChild(opt);
+  }
   renderStructLegend();
 }
 
@@ -219,6 +229,25 @@ function drawSpawnMarker() {
   ctx.fill();
 }
 
+let targetRing = null; // { x, z } found by the landmark finder
+
+function drawTargetRing() {
+  if (!targetRing) return;
+  const { px, pz } = blockToPixel(targetRing.x, targetRing.z, view.blockBox, view.scale);
+  if (px < -8 || px > canvas.width + 8 || pz < -8 || pz > canvas.height + 8) return;
+  const r = Math.max(5, Math.round(12 / Math.sqrt(view.scale)));
+  ctx.beginPath();
+  ctx.arc(px, pz, r, 0, Math.PI * 2);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(px, pz, Math.max(2, Math.round(r / 2.5)), 0, Math.PI * 2);
+  ctx.strokeStyle = "#ff3366";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
 function drawOverlay(markers, box) {
   const w = canvas.width;
   const h = canvas.height;
@@ -255,7 +284,49 @@ function drawOverlay(markers, box) {
   }
   overlayVisible = visible;
   drawSpawnMarker();
+  drawTargetRing();
   return { visible, viableCount };
+}
+
+function nearestLandmark() {
+  const seed = parseSeed(document.getElementById("seed").value);
+  const version = selectedVersion();
+  const name = findTypeEl.value;
+  const radius = Math.max(128, Number(findRadiusEl.value) || 4000);
+  landmarkResultEl.textContent = "—";
+  targetRing = null;
+  window.__seedmapNearest = null;
+  if (view.spawn === null) {
+    landmarkResultEl.textContent = "Generate the overworld map first.";
+    return;
+  }
+  const types = LANDMARK_TYPES.filter((s) => s.name === name);
+  const box = {
+    x0: view.spawn.x - radius, z0: view.spawn.z - radius,
+    x1: view.spawn.x + radius, z1: view.spawn.z + radius,
+  };
+  const all = structureOverlay({ engine, seed, mc: version.enumValue, box, types });
+  const byDist = (a, b) => {
+    const da = (a.x - view.spawn.x) ** 2 + (a.z - view.spawn.z) ** 2;
+    const db = (b.x - view.spawn.x) ** 2 + (b.z - view.spawn.z) ** 2;
+    return da - db;
+  };
+  const viable = all.filter((m) => m.viable).sort(byDist);
+  const pool = viable.length ? viable : all;
+  pool.sort(byDist);
+  const nearest = pool[0];
+  if (!nearest) {
+    landmarkResultEl.textContent = `No ${name} within ${radius} blocks of spawn.`;
+    return;
+  }
+  const dist = Math.round(Math.hypot(nearest.x - view.spawn.x, nearest.z - view.spawn.z));
+  window.__seedmapNearest = {
+    type: name, x: nearest.x, z: nearest.z, viable: nearest.viable, dist,
+  };
+  targetRing = { x: nearest.x, z: nearest.z };
+  landmarkResultEl.textContent = `${name} at (${nearest.x}, ${nearest.z}) · ${dist} blocks from spawn` +
+    (nearest.viable ? "" : " (attempt only)");
+  drawOverlay(lastMarkers, view.blockBox);
 }
 
 async function generate() {
@@ -446,6 +517,10 @@ overlayToggles.addEventListener("change", () => {
   safeGenerate();
 });
 
+document.getElementById("findNearest").addEventListener("click", () => {
+  try { nearestLandmark(); } catch (err) { landmarkResultEl.textContent = String(err.message || err); }
+});
+
 document.getElementById("scale").addEventListener("change", () => {
   const v = Number(document.getElementById("scale").value);
   if (!SCALES.includes(v)) return;
@@ -482,4 +557,6 @@ document.getElementById("findStructures").addEventListener("click", () => {
 });
 
 buildOverlayToggles();
+const hashSeed = location.hash.match(/#seed=([^&]+)/);
+if (hashSeed) document.getElementById("seed").value = hashSeed[1];
 safeGenerate();
