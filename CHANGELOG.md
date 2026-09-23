@@ -77,6 +77,11 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
   three `jni/<abi>` libraries, and `cmp`s the result byte-for-byte against the
   committed AAR (reproducibility oracle) — closing the gap where only the
   committed `.so` were ever packaged.
+- AAR packaging is now fully deterministic: archive tasks get
+  `isPreserveFileTimestamps=false`/`isReproducibleFileOrder=true`, and since
+  AGP's own AAR zip keeps live timestamps, `:seedmaps:normalizeReleaseAar`
+  re-zips it through a Gradle `Zip` task (committed AAR refreshed to that
+  normalized output).
 - Apple XCFramework is now consumed in CI: `link-smoke.c` is linked **and
   run** against the macOS slice and compiled against the iOS device slice;
   `bindings/apple/README.md` documents Xcode integration, signing, and the
