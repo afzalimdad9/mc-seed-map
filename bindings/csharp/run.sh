@@ -19,7 +19,7 @@ case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*)
     LIBFILE="seed_engine.dll"; EXPORT_FLAG="-Wl,--export-all-symbols";;
   Darwin)
-    LIBFILE="libseed_engine.so"; EXPORT_FLAG="";;
+    LIBFILE="libseed_engine.dylib"; EXPORT_FLAG="";;
   *)
     LIBFILE="libseed_engine.so"; EXPORT_FLAG="";;
 esac
@@ -29,7 +29,19 @@ esac
   vendor/cubiomes/{biomenoise,biomes,finders,generator,layers,noise,quadbase,util}.c \
   -lm -o "$LIB/$LIBFILE"
 
+# The .NET loader on macOS ignores LD_LIBRARY_PATH and always searches the
+# app-base directory, so drop the built lib next to the compiled assembly
+# (exact dotnet build output layout; obj/ must not be picked instead).
+"$DOTNET" build bindings/csharp -v q
+OUTDIR="$ROOT/bindings/csharp/bin/Debug/net8.0"
+if [[ -d "$OUTDIR" ]]; then
+  cp "$LIB/$LIBFILE" "$OUTDIR/"
+else
+  OUTDIR="$(find "$ROOT/bindings/csharp/bin" -type d -name net8.0 2>/dev/null | head -1)"
+  [[ -n "$OUTDIR" ]] && cp "$LIB/$LIBFILE" "$OUTDIR/"
+fi
+
 export PATH="$ROOT/$LIB:$PATH"
 export LD_LIBRARY_PATH="$ROOT/$LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export DYLD_LIBRARY_PATH="$ROOT/$LIB${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
-exec "$DOTNET" run --project bindings/csharp -v q
+exec "$DOTNET" run --project bindings/csharp --no-build -v q
