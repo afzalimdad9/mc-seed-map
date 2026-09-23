@@ -118,6 +118,17 @@ jobs:
           test "$total" -eq 5
           ls "$FRM"
 
+      - name: Consume the XCFramework (macOS link+run · iOS device compile)
+        run: |
+          MACSLICE=$(find bindings/apple/seed_engine.xcframework -path '*macos*' -name '*.a' | head -1)
+          xcrun clang -I engine/include bindings/apple/link-smoke.c "$MACSLICE" -o /tmp/link-smoke
+          /tmp/link-smoke
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          xcrun clang -arch arm64 -isysroot "$SDK" -miphoneos-version-min=12.0 \
+            -I engine/include -c bindings/apple/link-smoke.c -o /tmp/link-smoke-ios.o
+          echo "iOS device slice compiles against seed_engine.h"
+          ls -l /tmp/link-smoke /tmp/link-smoke-ios.o
+
       - name: Upload XCFramework artifact
         uses: actions/upload-artifact@v4
         with:
@@ -183,7 +194,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Install Android SDK (cmdline-tools + API 37 + build-tools)
+      - name: Install Android SDK (cmdline-tools + API 37 + build-tools + NDK)
         run: |
           sudo mkdir -p "$ANDROID_HOME"
           curl -fsSL -o /tmp/cmdline.zip \
@@ -192,17 +203,32 @@ jobs:
           sudo mv -f "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
           yes | sudo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
           sudo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
-            "platforms;android-37.0" "build-tools;36.0.0" platform-tools >/dev/null
+            "platforms;android-37.0" "build-tools;36.0.0" platform-tools \
+            "ndk;30.0.16248370" >/dev/null
           sudo ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          ls "$ANDROID_HOME/ndk"
 
-      - name: Android AAR build + integrity checks
+      - name: Android source→NDK→AAR chain + reproducibility
         run: |
+          # The committed release AAR (built with NDK 30) is the reproducibility
+          # oracle: build:android + build:aar must rebuild it byte-identical.
+          COMMITTED=bindings/android/dist/aar/seedmaps-release.aar
+          cp "$COMMITTED" "$RUNNER_TEMP/seedmaps-release.aar.orig"
+          npm run build:android
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            file "bindings/android/dist/$abi/libseed_engine.so"
+          done
           npm run build:aar
           AAR=bindings/android/dist/aar/seedmaps-release.aar
           test -s "$AAR"
-          unzip -l "$AAR" | grep -qE "classes.jar|lint.jar" && echo "AAR contains classes.jar"
-          ls -l "$AAR"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            unzip -l "$AAR" | grep -qE "jni/$abi/libseed_engine\.so" || {
+              echo "AAR missing jni/$abi/libseed_engine.so"; exit 1; }
+          done
+          unzip -l "$AAR" | grep -qE "classes\.jar"
+          cmp "$AAR" "$RUNNER_TEMP/seedmaps-release.aar.orig" \
+            && echo "REPRODUCIBLE: source→NDK→AAR byte-identical to committed"
 
   ports:
     name: ports · Android on-device (emulator, no KVM → slow, experimental)

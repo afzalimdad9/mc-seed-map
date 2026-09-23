@@ -19,7 +19,7 @@
     "build:android": "./bindings/android/build-android.sh",
     "test:android": "bindings/android/test-host.sh",
     "test:android-device": "bindings/android/test-device.sh",
-    "build:aar": "cd bindings/android/aar && JAVA_HOME=${JAVA_HOME:-$HOME/.local/share/jdk} ./gradlew :seedmaps:assembleRelease :app:assembleDebug -q && mkdir -p ../../dist/aar && cp seedmaps/build/outputs/aar/seedmaps-release.aar ../../dist/aar/seedmaps-release.aar",
+    "build:aar": "cd bindings/android/aar && JAVA_HOME=${JAVA_HOME:-$HOME/.local/share/jdk} ./gradlew :seedmaps:assembleRelease :app:assembleDebug -q && mkdir -p ../dist/aar && cp seedmaps/build/outputs/aar/seedmaps-release.aar ../dist/aar/seedmaps-release.aar && test -s ../dist/aar/seedmaps-release.aar",
     "test:swift": "bash bindings/swift/run.sh",
     "test:csharp": "bash bindings/csharp/run.sh",
     "test:python": "bash bindings/python/run.sh",

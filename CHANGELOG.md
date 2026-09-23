@@ -60,7 +60,10 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
 ### Packaging / CI polish
 - `build:aar` fixed (its `cd ../..` landed in `bindings/`, never the repo root)
   and wired into `npm test`; AAR jars are byte-deterministic so the committed
-  artifact stays in sync.
+  artifact stays in sync. The `build:aar` output copy had a second relative-path
+  bug (`../../dist/aar` resolved to `bindings/dist`, silently validating the
+  *committed* AAR instead of the freshly built one) — now `../dist/aar`, with a
+  `test -s` guard; the stray tracked AAR under `bindings/dist/` was removed.
 - `wasm/` published as `seedmaps-engine-wasm` (files `dist` + `prepack`
   rebuild; `npm pack` verified by installing the tarball in a scratch project);
   `test:wasm-pack` in the chain.
@@ -68,12 +71,23 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
   suite, `macos` native/WASM/Swift + Apple XCFramework artifact, `windows`
   MinGW native + C# + Python, `android` SDK/AAR, and a manual `ports` job for
   the Android on-device emulator test.
+- Android CI now builds the native engine **from source**: installs NDK
+  30.0.16248370, runs `build:android` (3 `libseed_engine.so` ABIs, arch-checked
+  with `file`) then `build:aar`, asserts the AAR bundles `classes.jar` + all
+  three `jni/<abi>` libraries, and `cmp`s the result byte-for-byte against the
+  committed AAR (reproducibility oracle) — closing the gap where only the
+  committed `.so` were ever packaged.
+- Apple XCFramework is now consumed in CI: `link-smoke.c` is linked **and
+  run** against the macOS slice and compiled against the iOS device slice;
+  `bindings/apple/README.md` documents Xcode integration, signing, and the
+  SwiftPM `.binaryTarget` roadmap.
 - `sdk/README.md` status table refreshed to actual (all bindings working).
 - Root `LICENSE` (MIT) with third-party attribution; milestone git tags.
 
 ### Known limitations
-- Apple XCFramework and on-device CI need Apple/Android hosts (`bindings/apple/
-  xcframework.sh` draft, workflow `ports` job).
+- The SwiftPM binary target is not wired yet (Apple-only package; would need a
+  checked-in `seed_engine.xcframework`); no signed release / notarization
+  pipeline. The on-device emulator CI job is manual (`ports`) because hosted
+  runners have no KVM.
 - Bedrock is out of scope without independent reverse-engineering (`docs/
   bedrock.md`).
-- No `git remote` is configured; tags are local until pushed.
