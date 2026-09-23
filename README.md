@@ -56,9 +56,11 @@ npm run test:python
 
 `wasm/` is a publishable npm package (`seedmaps-engine-wasm`) exposing the
 raw WASM engine; `npm publish ./wasm` publishes the tarball.
-GitHub Actions CI (`.github/workflows/ci.yml`) runs the full core suite on
-every push; a `workflow_dispatch` "ports" job covers the Swift CLI and the
-Android SDK/AAR builds that need an Apple/Android host.
+GitHub Actions CI (`.github/workflows/ci.yml`) builds and tests on Linux
+(full core suite incl. all bindings), macOS (native, WASM, Swift, Apple
+XCFramework artifact), Windows (MinGW native, C#, Python) and Android (SDK +
+AAR) on every push; a manual `workflow_dispatch` "ports" job additionally runs
+the Android on-device emulator test.
 
 ## Validated reference
 

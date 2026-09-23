@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Build plain libseed_engine.so (no JNI) for the C# P/Invoke binding, then run
-# the .NET sample. Skips cleanly when no .NET SDK is installed.
+# Build plain libseed_engine.so/.dylib/seed_engine.dll (no JNI) for the C#
+# P/Invoke binding, then run the .NET sample. Skips cleanly when no .NET SDK
+# is installed. Portable across Linux/macOS (ELF/Mach-O .so) and MSYS2/MinGW
+# Windows (PE seed_engine.dll with exported symbols).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -11,11 +13,23 @@ if [[ ! -x "$DOTNET" ]]; then
   exit 0
 fi
 
-mkdir -p bindings/csharp/lib
-cc -shared -fPIC -fwrapv -O2 -I engine/include -I vendor/cubiomes \
+LIB="bindings/csharp/lib"
+mkdir -p "$LIB"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    LIBFILE="seed_engine.dll"; EXPORT_FLAG="-Wl,--export-all-symbols";;
+  Darwin)
+    LIBFILE="libseed_engine.so"; EXPORT_FLAG="";;
+  *)
+    LIBFILE="libseed_engine.so"; EXPORT_FLAG="";;
+esac
+
+"${CC:-cc}" -shared -fPIC -fwrapv -O2 $EXPORT_FLAG -I engine/include -I vendor/cubiomes \
   engine/src/seed_engine.c \
   vendor/cubiomes/{biomenoise,biomes,finders,generator,layers,noise,quadbase,util}.c \
-  -lm -o bindings/csharp/lib/libseed_engine.so
+  -lm -o "$LIB/$LIBFILE"
 
-export LD_LIBRARY_PATH="$ROOT/bindings/csharp/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export PATH="$ROOT/$LIB:$PATH"
+export LD_LIBRARY_PATH="$ROOT/$LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export DYLD_LIBRARY_PATH="$ROOT/$LIB${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
 exec "$DOTNET" run --project bindings/csharp -v q

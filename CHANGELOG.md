@@ -64,9 +64,10 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
 - `wasm/` published as `seedmaps-engine-wasm` (files `dist` + `prepack`
   rebuild; `npm pack` verified by installing the tarball in a scratch project);
   `test:wasm-pack` in the chain.
-- GitHub Actions CI: `core` job runs the full cross-platform suite on every
-  push; a manual `ports` job (workflow_dispatch) adds Swift + Android
-  SDK/AAR/on-device surfaces.
+- GitHub Actions CI matrix (`.github/workflows/ci.yml`): `linux` full core
+  suite, `macos` native/WASM/Swift + Apple XCFramework artifact, `windows`
+  MinGW native + C# + Python, `android` SDK/AAR, and a manual `ports` job for
+  the Android on-device emulator test.
 - `sdk/README.md` status table refreshed to actual (all bindings working).
 - Root `LICENSE` (MIT) with third-party attribution; milestone git tags.
 

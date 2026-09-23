@@ -8,12 +8,19 @@ cd "$ROOT"
 PY="${PYTHON:-python3}"
 command -v "$PY" >/dev/null || { echo "python3 not found; skipping Python sample"; exit 0; }
 
-mkdir -p bindings/python/lib
-cc -shared -fPIC -fwrapv -O2 -I engine/include -I vendor/cubiomes \
+LIB="bindings/python/lib"
+mkdir -p "$LIB"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) LIBFILE="seed_engine.dll"; EXPORT_FLAG="-Wl,--export-all-symbols";;
+  *) LIBFILE="libseed_engine.so"; EXPORT_FLAG="";;
+esac
+
+"${CC:-cc}" -shared -fPIC -fwrapv -O2 $EXPORT_FLAG -I engine/include -I vendor/cubiomes \
   engine/src/seed_engine.c \
   vendor/cubiomes/{biomenoise,biomes,finders,generator,layers,noise,quadbase,util}.c \
-  -lm -o bindings/python/lib/libseed_engine.so
+  -lm -o "$LIB/$LIBFILE"
 
-export LD_LIBRARY_PATH="$ROOT/bindings/python/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export SEED_ENGINE_LIB="$ROOT/bindings/python/lib/libseed_engine.so"
+export LD_LIBRARY_PATH="$ROOT/$LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export DYLD_LIBRARY_PATH="$ROOT/$LIB${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+export SEED_ENGINE_LIB="$ROOT/$LIB/$LIBFILE"
 exec "$PY" bindings/python/seedmaps.py "$@"
