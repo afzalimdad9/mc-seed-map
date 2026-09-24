@@ -88,6 +88,10 @@ is also tagged in git (`m1` … `m6`); `v0.1.0` points at this commit.
   `bindings/apple/README.md` documents Xcode integration, signing, and the
   SwiftPM `.binaryTarget` roadmap.
 - `sdk/README.md` status table refreshed to actual (all bindings working).
+- Vercel static deployment: `scripts/site-build.mjs` mirrors the repo-relative
+  ESM/wasm tree into `out/`, `vercel.json` serves it statically; the built
+  tree passes the full Playwright browser suite (incl. `application/wasm`
+  MIME); deployed under the GalaxyCodez team (SSO-protected by default).
 - Root `LICENSE` (MIT) with third-party attribution; milestone git tags.
 
 ### Known limitations

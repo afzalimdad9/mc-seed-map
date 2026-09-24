@@ -87,6 +87,28 @@ scripts/         build-wasm.mjs + test suites (browser / wasm / golden / …)
 docs/            milestones + bedrock evaluation / roadmap
 ```
 
+## Deployments (Vercel)
+
+The web app is plain static ESM (no bundler), so it deploys as a static site.
+`scripts/site-build.mjs` mirrors the repo-relative import chain into `out/`
+(`apps/web`, `packages/{core,finder,java}`, `wasm/dist`) — required because
+the import paths and the Emscripten `.wasm` resolution are relative to the
+repo layout — then `vercel.json` (`outputDirectory: out`) serves `out/`.
+
+```bash
+npm run build:wasm   # out/ needs the (gitignored) wasm/dist first
+vercel deploy --scope <team>          # preview
+vercel deploy --prod --scope <team>   # production
+```
+
+The GalaxyCodez team has SSO deployment protection on, so deployments are
+team-private by default; open the project's **Settings → Deployment
+Protection** to make the Production environment public. Auto-deployment
+options: a GitHub Actions job can run `build:wasm` on a runner with emcc and
+`vercel deploy --prebuilt` (needs a `VERCEL_TOKEN` secret), or the native
+Vercel GitHub App — which needs `wasm/dist` committed, since Vercel's build
+container cannot run emcc.
+
 ## Version support policy
 
 - Cubiomes models **Minecraft Java** biome/structure generation only.
