@@ -1,0 +1,11 @@
+{
+  "framework": null,
+  "buildCommand": "node scripts/site-build.mjs",
+  "outputDirectory": "out",
+  "headers": [
+    {
+      "source": "/:path*.wasm",
+      "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+    }
+  ]
+}
